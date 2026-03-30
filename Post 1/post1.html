@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teaching Radiospectra the Language of the Universe | GSoC 2026</title>
+
+    <!-- Fonts & MathJax -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+      :root {
+        --bg-dark: #050510;
+        --text-main: #e2e8f0;
+        --text-heading: #ffffff;
+        --accent-glow: #38bdf8;
+        --accent-border: #818cf8;
+        --code-bg: rgba(15, 23, 42, 0.8);
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        line-height: 1.8;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        /* Deep space gradient background */
+        background-image:
+          radial-gradient(ellipse at top right, rgba(129, 140, 248, 0.15) 0%, transparent 60%),
+          radial-gradient(ellipse at bottom left, rgba(56, 189, 248, 0.15) 0%, transparent 60%);
+        background-attachment: fixed;
+      }
+
+      /* Pure CSS Starfield Effect */
+      .stars {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+        background: transparent
+          url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><circle cx="20" cy="20" r="1" fill="white" opacity="0.5"/><circle cx="150" cy="80" r="1.5" fill="white" opacity="0.8"/><circle cx="300" cy="250" r="1" fill="white" opacity="0.3"/><circle cx="80" cy="320" r="2" fill="white" opacity="0.6"/></svg>')
+          repeat;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 60px 20px;
+        padding: 50px 60px;
+        background: rgba(10, 15, 30, 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+      }
+
+      h1 {
+        color: var(--text-heading);
+        font-size: 3.2rem;
+        font-weight: 800;
+        margin-bottom: 0.2em;
+        letter-spacing: -1px;
+        text-shadow: 0 0 30px rgba(56, 189, 248, 0.6);
+        line-height: 1.2;
+      }
+
+      .subtitle {
+        font-family: "Space Mono", monospace;
+        font-size: 1rem;
+        color: var(--accent-glow);
+        margin-bottom: 3em;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+      }
+
+      h2 {
+        color: var(--text-heading);
+        font-size: 2rem;
+        font-weight: 600;
+        margin-top: 2.5em;
+        margin-bottom: 1em;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      h2::before {
+        content: "";
+        display: inline-block;
+        width: 30px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent-border), transparent);
+        border-radius: 2px;
+      }
+
+      p {
+        font-size: 1.2rem;
+        margin-bottom: 1.6em;
+      }
+
+      .suspense {
+        font-family: "Space Mono", monospace;
+        color: #fca5a5;
+        background: rgba(220, 38, 38, 0.1);
+        padding: 10px 15px;
+        border-left: 3px solid #ef4444;
+        font-size: 1.05rem;
+        margin: 20px 0;
+        border-radius: 0 8px 8px 0;
+      }
+
+      .highlight-box {
+        background-color: rgba(56, 189, 248, 0.05);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        padding: 30px;
+        margin: 40px 0;
+        border-radius: 8px;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+      }
+
+      .image-placeholder {
+        width: 100%;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 2px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.5);
+        font-family: "Space Mono", monospace;
+        margin: 30px 0;
+        text-align: center;
+        flex-direction: column;
+        gap: 10px;
+        transition: all 0.3s ease;
+      }
+
+      .image-placeholder:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+
+      .image-placeholder span {
+        font-size: 2rem;
+      }
+
+      strong {
+        color: #fff;
+      }
+
+      code {
+        font-family: "Space Mono", monospace;
+        background-color: var(--code-bg);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        color: var(--accent-glow);
+      }
+
+      .footer {
+        margin-top: 60px;
+        padding-top: 30px;
+        border-top: 1px dashed rgba(255, 255, 255, 0.1);
+        text-align: center;
+        color: #64748b;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .container {
+          padding: 30px 20px;
+        }
+        h1 {
+          font-size: 2.2rem;
+        }
+        h2 {
+          font-size: 1.5rem;
+        }
+        p {
+          font-size: 1.1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- CSS Starfield Background -->
+    <div class="stars"></div>
+
+    <div class="container">
+      <h1>Giving Radiospectra a Cosmic GPS</h1>
+      <div class="subtitle">Mission Log • GSoC 2026 • Radiospectra</div>
+
+      <h2>What is Radiospectra?</h2>
+      <p>
+        Imagine you are sitting in a quiet, dark observatory. Suddenly, a massive Coronal Mass Ejection (CME) rips away
+        from the surface of the Sun. Millions of highly energized electrons go blasting through the solar system.
+      </p>
+
+      <p>
+        As these electrons travel, they emit intense, shrieking bursts of radio waves. Down on Earth, and out in deep
+        space, instruments like the Parker Solar Probe catch these signals. To analyze this incredible cosmic event
+        using Python, astronomers rely on a specialized library within the <strong>SunPy</strong> ecosystem:
+        <code>radiospectra</code>.
+      </p>
+
+      <p>
+        We use it to turn invisible radio waves into beautiful, colorful, dynamic visualizations called spectrograms.
+      </p>
+
+      <img
+        src="image1_burst.png"
+        alt="A beautiful, colorful spectrogram plot showing a Type III solar radio burst"
+        style="
+          width: 100%;
+          height: auto;
+          border-radius: 12px;
+          margin: 30px 0;
+          box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+        "
+      />
+
+      <h2>The Problem: Blind in the Dark</h2>
+      <p>
+        You excitedly download the data to track the storm. You tell the computer to load the analysis array. But deep
+        underneath the code... something is terribly wrong. The array is lost.
+      </p>
+
+      <p>
+        Right now, <code>radiospectra</code> stores this incredible cosmic data in incredibly "dumb"
+        <strong>NumPy arrays</strong>. It works like a simple grid of numbers. If you ask the data,
+        <em>"What time did this huge burst happen?"</em> it doesn't actually know. It just knows that the burst is
+        sitting at "Row 50, Column 100". It keeps the physical timestamps in a completely separate, disconnected list.
+      </p>
+
+      <div class="suspense">WARNING: Telemetry signal lost.</div>
+
+      <p>
+        Then, disaster strikes. Your telescope loses connection to the satellite for exactly two hours. A huge gap
+        appears in the data timeline.
+      </p>
+
+      <p>
+        When you try to plot this using standard Python tools, the plotting engine panics. Because the time list is
+        disconnected from the data grid, the computer just stitches the flawed grid together anyway. The result? It
+        takes signals from before the outage and smears them across the missing timeline. You are now looking at "ghost
+        data"—an event that never actually happened. A scientist could write an entire research paper based on an
+        optical illusion caused by bad code!
+      </p>
+
+      <img
+        src="image2_buggy_gap.png"
+        alt="A buggy, stretched spectrogram plot showing the 'ghost data' effect"
+        style="
+          width: 100%;
+          height: auto;
+          border-radius: 12px;
+          margin: 30px 0;
+          box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        "
+      />
+
+      <h2>The Goal: Complete SunPy Parity</h2>
+      <p>
+        We have to stop hacking the code and fix the root cause. This summer, my ultimate mission is to create total
+        <strong>API Parity</strong>.
+      </p>
+
+      <p>
+        When an astronomer loads a spatial image using standard SunPy tools (like <code>sunpy.map.Map</code>), the image
+        isn't dumb. It knows its exact coordinates in the universe. I want to build that exact same deep intelligence
+        into <code>radiospectra</code> so scientists can trust the tool completely without ever writing complicated
+        workarounds.
+      </p>
+
+      <h2>The Solution: Adding a Universal GPS</h2>
+      <p>
+        To save the data from being a disconnected grid, we need to completely rip out the old framework and replace it
+        with a highly advanced container called <strong><code>ndcube.NDCube</code></strong
+        >.
+      </p>
+
+      <p>
+        By migrating to NDCube, we are equipping every single pixel of data with a
+        <strong>World Coordinate System (WCS)</strong>. Think of WCS as a cosmic GPS tracker for your data matrix. It
+        securely binds the mathematical grid directly to physical reality.
+      </p>
+
+      <div class="highlight-box">
+        <p>
+          <strong>The Math That Saves the Day:</strong><br />
+          We teach the pixel how to talk to the universe using an affine transformation matrix. It translates an empty
+          pixel index \( p \) directly into a physical continuum coordinate \( x \) (like UTC Time):
+        </p>
+        <p style="font-size: 1.4rem; text-align: center; margin: 30px 0">
+          \[ x_i = \sum_{j=1}^{N} C_{ij} (p_j - p_{0,j}) + x_{0,i} \]
+        </p>
+        <p>The code instantly learns the deep laws of physics.</p>
+      </div>
+
+      <p>Once we introduce this "Cosmic GPS", amazing things happen:</p>
+      <ul>
+        <li>
+          <strong>No More Ghost Data:</strong> I will implement strict mathematical cadence checkers (\( \Delta t_i > C
+          \cdot (1 + \epsilon) \)). If the telescope goes offline, the code will recognize the anomaly, shatter the
+          plotting grid, and explicitly render clean, empty whitespace.
+        </li>
+        <li>
+          <strong>Flawless Background Subtraction:</strong> Using vectorization filters (like
+          <code>scipy.ndimage.minimum_filter1d</code>), we can automatically scrub out the noisy background static of
+          the galaxy in milliseconds, leaving only the pristine radio burst visible.
+        </li>
+        <li>
+          <strong>Physical Slicing:</strong> Instead of guessing row numbers, an astronomer can slice data intuitively
+          by asking simply: <em>"Give me everything exactly between 14:00 and 15:00 UTC."</em>
+        </li>
+      </ul>
+
+      <img
+        src="image3_fixed_gap.png"
+        alt="The repaired spectrogram rendering a clean white block where the data gap is"
+        style="
+          width: 100%;
+          height: auto;
+          border-radius: 12px;
+          margin: 30px 0;
+          box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        "
+      />
+
+      <h2>Conclusion: A New Era</h2>
+      <p>
+        This isn't just a bug fix; it is a structural revolution. By anchoring <code>radiospectra</code> to the deep
+        <code>NDCube</code> specification, we completely eliminate the massive technical debt holding the library back.
+      </p>
+
+      <p>
+        We are building a robust, mathematically sound, and fail-proof tool that future generations of solar astronomers
+        can confidently rely on to unlock the secrets of our star.
+      </p>
+
+      <div class="footer">
+        Mission Specialist: Mohamed Ali<br />
+        Open Source Architecture & Python Development
+      </div>
+    </div>
+  </body>
+</html>
