@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teaching Radiospectra the Language of the Universe | Mohamed Ali</title>
+    <style>
+        /* Classic Full-Page Dark Theme CSS */
+        body {
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212 !important; /* Deep dark background */
+            color: #e0e0e0 !important; /* Off-white text for readability */
+            margin: 0;
+            padding: 0;
+            line-height: 1.8;
+        }
+
+        /* Full width header */
+        header {
+            background-color: #1a1a1a !important; /* Slightly lighter than body */
+            border-bottom: 3px solid #f26522 !important; /* SunPy Orange accent */
+            padding: 50px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 32px;
+            color: #ffffff !important;
+            letter-spacing: 0.5px;
+        }
+
+        header p {
+            margin: 10px 0 0 0;
+            font-size: 16px;
+            color: #aaaaaa !important;
+        }
+
+        /* Main Content Area - No floating cards, just a readable width */
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .post-title {
+            font-size: 36px;
+            color: #ffffff !important;
+            margin-top: 0;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        .post-date {
+            font-size: 14px;
+            color: #888888 !important;
+            border-bottom: 1px solid #333333 !important;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        p {
+            font-size: 18px;
+            color: #cccccc !important;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #ffffff !important;
+            margin-top: 50px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333333 !important;
+            padding-bottom: 10px;
+        }
+
+        /* Dark Theme Math & Code Blocks */
+        .math-block {
+            background-color: #1e1e1e !important;
+            border-left: 4px solid #f26522 !important; /* Orange left border */
+            padding: 20px;
+            margin: 25px 0;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 18px;
+            text-align: center;
+            color: #ffffff !important;
+            overflow-x: auto;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        code {
+            background-color: #2a2a2a !important;
+            color: #ff9d00 !important; /* Amber color for inline code */
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 16px;
+        }
+
+        blockquote {
+            border-left: 4px solid #f26522 !important;
+            margin: 0;
+            padding-left: 20px;
+            color: #999999 !important;
+            font-style: italic;
+        }
+
+        a {
+            color: #f26522 !important;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: #ff8547 !important; /* Lighter orange on hover */
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: #666666 !important;
+            font-size: 14px;
+            margin-top: 40px;
+            border-top: 1px solid #222222 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Mohamed Ali</h1>
+        <p>OpenAstronomy &bull; SunPy &bull; GSoC 2026</p>
+    </header>
+
+    <main class="container">
+        <h1 class="post-title">Teaching Radiospectra the Language of the Universe</h1>
+        <div class="post-date">March 30, 2026 &bull; GSoC Journey</div>
+
+        <p>Hello world! I am Mohamed Ali, and I am incredibly excited to announce that I am dedicating my summer to open-source as part of Google Summer of Code (GSoC). For the next few months, I will be working with OpenAstronomy—specifically the SunPy ecosystem—to modernize and level up the <code>radiospectra</code> package.</p>
+
+        <p>If you have been following my recent pull requests (#167, #181, #189), you know I've been deep-diving into the architecture of <code>radiospectra</code>. Working alongside my mentors, we realized something fundamental: to add the advanced features astronomers desperately need, we have to rebuild the foundation. My ultimate goal for this summer is simple: <strong>make radiospectra's API look, feel, and behave identically to core SunPy libraries.</strong></p>
+
+        <h2>A Pixel is Never Just a Pixel</h2>
+        <p>In solar radio astronomy, a pixel on your screen isn't just a dot of color; it represents a strict physical block of time (<i>&Delta;t</i>) and frequency (<i>&nu;</i>). Currently, <code>radiospectra</code> maps these properties using disconnected NumPy arrays. This leads to a disjointed data structure where adding advanced features requires writing custom, scratch-pad math.</p>
+
+        <h2>The Shift to NDCube & ExtraCoords</h2>
+        <p>The biggest architectural shift I am implementing is replacing the custom <code>GenericSpectrogram</code> class with a coordinate-aware <code>Spectra</code> object backed entirely by <code>ndcube.NDCube</code>.</p>
+        
+        <p>Why <code>NDCube</code>? Because it inherently understands Astropy's APE-14 World Coordinate System (WCS). For standard linear spectrograms, the mapping from pixel coordinates <i>p</i> to physical WCS values <i>x</i> is defined by the affine geometric transformation:</p>
+
+        <div class="math-block">
+            x<sub>i</sub> = &Sigma; C<sub>ij</sub> (p<sub>j</sub> - p<sub>0,j</sub>) + x<sub>0,i</sub>
+        </div>
+
+        <p>However, many solar radio instruments exhibit non-linear scalar frequency dispersions. To resolve this, I will utilize <code>ndcube.ExtraCoords</code>, storing irregular 1D frequency arrays as strict lookup tables. This natively computes physical coordinates without assuming linearity!</p>
+
+        <h2>Cutting Through the Noise: Background Subtraction</h2>
+        <p>Radio spectra are fundamentally contaminated by steady background emissions and systemic instrument drift. I am building a class-based background reduction architecture boasting O(N) vectorizations.</p>
+
+        <p>For example, implementing a temporal rolling minimum background subtraction with a window size <i>W</i> looks like this:</p>
+
+        <div class="math-block">
+            S'<sub>f, t</sub> = S<sub>f, t</sub> - min(S<sub>f, k</sub>) <br><i>for k &isin; [t - W/2, t + W/2]</i>
+        </div>
+
+        <p>This will be exclusively implemented utilizing <code>scipy.ndimage.minimum_filter1d</code> to enforce C-level vectorization and explicitly avoid Python bottleneck loops.</p>
+
+        <h2>Minding the Gaps</h2>
+        <p>Instrument telemetry is rarely perfect. Continuing the work I started in PR #181, I am building a standalone gap detection utility. It will measure strict differential deltas. Given an expected cadence <i>C</i> and a tolerance <i>&epsilon;</i>, the system will recognize a physical gap when:</p>
+
+        <div class="math-block">
+            &Delta;t<sub>i</sub> &gt; C &middot; (1 + &epsilon;)
+        </div>
+
+        <p>When identified, the arrays will be patched with explicit <code>np.nan</code> blocks. This instructs Matplotlib to render clean, accurate visual whitespace instead of misleadingly stretching the data.</p>
+
+        <h2>What's Next?</h2>
+        <p>Over the next 350 hours, I will be migrating the core codebase, ensuring backward compatibility, and building out a rich Jupyter Notebook gallery. I am completely dedicated to making <code>radiospectra</code> a more powerful, interoperable tool for the solar physics community.</p>
+
+        <p>Stay tuned, and feel free to reach out to me on Matrix at <a href="#">@medali__:matrix.org</a> or follow my work on <a href="https://github.com/MohamedAli1937" target="_blank">GitHub</a>!</p>
+
+    </main>
+
+    <footer>
+        &copy; 2026 Mohamed Ali | Built for the OpenAstronomy GSoC Application
+    </footer>
+
+</body>
+</html>
