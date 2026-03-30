@@ -54,7 +54,7 @@
       }
 
       .container {
-        max-width: 800px;
+        max-width: 1000px;
         margin: 60px 20px;
         padding: 50px 60px;
         background: rgba(10, 15, 30, 0.75);
@@ -312,9 +312,16 @@
       <p>Once we introduce this "Cosmic GPS", amazing things happen:</p>
       <ul>
         <li>
-          <strong>No More Ghost Data:</strong> I will implement strict mathematical cadence checkers (\( \Delta t_i > C
-          \cdot (1 + \epsilon) \)). If the telescope goes offline, the code will recognize the anomaly, shatter the
-          plotting grid, and explicitly render clean, empty whitespace.
+          <strong>Gap-Aware Visualization:</strong> Injecting mathematical tolerance algorithms that dynamically
+          generate <code>NaN</code> padded $N+1$ boundaries, shattering the `pcolormesh` visualization grid (\( \Delta
+          t_i > C \cdot (1 + \epsilon) \)) and inherently stopping the visual teleportation of telemetry gaps.
+        </li>
+        <li>
+          <strong>Customizable Physics & Advanced Operations:</strong> The new <code>Spectra</code> object won't just
+          slice data; it will natively support complex, axis-aware operations like
+          <em>scaling, reductions, and rebinning</em>. Furthermore, because scientific research is always evolving, I am
+          building a flexible API that allows researchers to effortlessly plug in their own custom background
+          subtraction algorithms alongside our robust built-in methods.
         </li>
         <li>
           <strong>Flawless Background Subtraction:</strong> Using vectorization filters (like
@@ -339,15 +346,25 @@
         "
       />
 
-      <h2>Conclusion: A New Era</h2>
+      <h2>Conclusion</h2>
       <p>
-        This isn't just a bug fix; it is a structural revolution. By anchoring <code>radiospectra</code> to the deep
-        <code>NDCube</code> specification, we completely eliminate the massive technical debt holding the library back.
+        Transitioning the backbone of a major scientific library is not just about adding isolated features; it's about
+        paying off years of technical debt. By anchoring <code>radiospectra</code> to the
+        <code>NDCube</code> specification, we aren't just fixing bugs—we are building a powerful, reliable foundation
+        that future generations of solar radio astronomers can fundamentally trust.
       </p>
 
       <p>
-        We are building a robust, mathematically sound, and fail-proof tool that future generations of solar astronomers
-        can confidently rely on to unlock the secrets of our star.
+        But a powerful tool is useless without a good manual. A core deliverable of my mission is to produce a rich,
+        interactive <strong>Example Gallery</strong> using Jupyter Notebooks. Combined with comprehensive documentation
+        and rigorous test coverage, this gallery will walk users through real-world workflows—from coordinate-based
+        slicing to advanced background subtraction—ensuring the community can immediately harness these new
+        capabilities.
+      </p>
+
+      <p>
+        Stay tuned over the coming months as I dive into the code and teach these numerical arrays the language of the
+        universe. 🚀
       </p>
 
       <div class="footer">
