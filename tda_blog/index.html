@@ -1,0 +1,2649 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>When Topology Meets The Market — TDA for Financial Crash Detection</title>
+    <meta
+      name="description"
+      content="A deep dive into Topological Data Analysis, Takens Embedding, Vietoris-Rips Persistent Homology, and how they power a real-world Market Risk Analyzer."
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+        startup: {
+          pageReady: () => MathJax.startup.defaultPageReady().then(() => document.body.classList.add("mathjax-ready")),
+        },
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <link rel="stylesheet" href="styles.css" />
+
+    <script>
+      (function () {
+        var saved = localStorage.getItem("tda-blog-theme");
+
+        var theme = saved || "dark";
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      <svg class="icon-moon" viewBox="0 0 24 24">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+
+      <svg class="icon-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="5" />
+        <line x1="12" y1="1" x2="12" y2="3" />
+        <line x1="12" y1="21" x2="12" y2="23" />
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+        <line x1="1" y1="12" x2="3" y2="12" />
+        <line x1="21" y1="12" x2="23" y2="12" />
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+      </svg>
+    </button>
+
+    <section class="hero">
+      <h1>When <em>Topology</em> Meets The Market</h1>
+      <p class="hero-subtitle">
+        Financial markets don't just <em>move</em> — they change <strong>shape</strong>. Can abstract
+        <strong><em>mathematics</em></strong> see a crash before it happens?
+      </p>
+
+      <div class="scroll-indicator">
+        <span>Scroll</span>
+        <svg viewBox="0 0 24 24">
+          <path d="M12 5v14M19 12l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    </section>
+
+    <div class="page-container">
+      <aside class="toc-sidebar">
+        <div class="toc-progress-wrapper">
+          <div class="toc-progress-fill" id="tocProgressFill"></div>
+        </div>
+        <div class="toc-card">
+          <h3 class="toc-title">Table of Contents</h3>
+          <ul class="toc-list">
+            <li class="toc-part">Part I. The Mathematics</li>
+            <li class="toc-item"><a href="#sec-1-1" class="toc-link">1.1 Where It All Began</a></li>
+            <li class="toc-item"><a href="#sec-1-2" class="toc-link">1.2 Topological Data Analysis</a></li>
+            <li class="toc-item"><a href="#sec-1-3" class="toc-link">1.3 Takens' Embedding</a></li>
+            <li class="toc-item"><a href="#sec-1-4" class="toc-link">1.4 Simplicial Complexes</a></li>
+            <li class="toc-item"><a href="#sec-1-5" class="toc-link">1.5 The Vietoris-Rips Complex</a></li>
+            <li class="toc-item"><a href="#sec-1-6" class="toc-link">1.6 Persistent Homology</a></li>
+
+            <li class="toc-part">Part II. Application</li>
+            <li class="toc-item"><a href="#sec-2-1" class="toc-link">2.1 The TDA Pipeline</a></li>
+            <li class="toc-item"><a href="#sec-2-2" class="toc-link">2.2 Why Loops Predict Crashes</a></li>
+            <li class="toc-item"><a href="#sec-2-3" class="toc-link">2.3 The Real-World Analyzer</a></li>
+          </ul>
+        </div>
+      </aside>
+
+      <div class="content">
+        <p class="lead-text">
+          Every financial chart hides a deeper reality. Behind the candlesticks and moving averages lies a
+          <span class="highlight">geometric structure</span> — a high-dimensional shape that bends, stretches, and
+          eventually <em>collapses</em> before a crash. This is the story of how we built the mathematics to see it —
+          and the tool to act on it.
+        </p>
+
+        <div class="part-divider">
+          <div class="part-label">Part I</div>
+          <div class="part-title">The Mathematics of Shape</div>
+          <hr class="part-rule" />
+        </div>
+
+        <div class="section-card" id="sec-1-1">
+          <div class="section-num">Section 1.1</div>
+          <h2>Where It All Began — Euler and the Seven Bridges of Königsberg</h2>
+          <p>
+            The year is <strong>1736</strong>. In the Prussian city of Königsberg (modern-day Kaliningrad), seven
+            bridges connect two islands in the Pregel River to the surrounding mainland. The citizens pose a deceptively
+            simple puzzle:<br />
+            <em
+              ><span class="highlight"
+                >Is it possible to walk through the city, crossing each bridge exactly once, and return to the starting
+                point?</span
+              ></em
+            >
+          </p>
+          <p>
+            The great mathematician <strong><span class="highlight">Leonhard Euler</span></strong> realized that the
+            specific distances, positions, and shapes of the land masses were <em>irrelevant</em>. What mattered was
+            only the <strong>structure of connections</strong> — how many bridges connected each region. He abstracted
+            the map into a <strong>graph</strong>: four nodes (land masses) connected by seven edges (bridges).
+          </p>
+
+          <div class="callout">
+            <p>
+              <strong>Euler's Theorem (1736).</strong> A connected graph has an Eulerian circuit (a closed walk visiting
+              every edge exactly once) if and only if every vertex has <em>even degree</em>. In Königsberg, all four
+              vertices had odd degree — so the answer was <strong>no</strong>.
+            </p>
+          </div>
+
+          <p>
+            This proof is considered the <span class="highlight">birth of topology</span>. Euler showed that some
+            problems depend not on geometry but on something more fundamental —
+            <strong><span class="highlight">the qualitative structure of connections</span></strong
+            >. This is exactly what topology studies: properties of shape that survive when you stretch, bend, or deform
+            an object, but <em>never tear or glue</em>.
+          </p>
+          <p>
+            A coffee cup and a donut are topologically identical (both have exactly one hole). A sphere and a cube are
+            also identical (zero holes). What matters is not the shape's appearance but its
+            <strong>connectivity</strong> — how many holes, components, and voids it contains.
+          </p>
+          <p>
+            Nearly <strong>300 years later</strong>, this same idea — that abstract structural features convey more
+            vital intelligence than raw measurements — serves as the foundation of
+            <span class="highlight">Topological Data Analysis</span>. But how do we apply an 18th-century puzzle about
+            static bridges to the chaotic, high-velocity fluctuations of modern financial markets?
+          </p>
+
+          <div class="image-slot has-image" style="margin: 28px 0">
+            <svg
+              viewBox="0 0 800 400"
+              xmlns="http://www.w3.org/2000/svg"
+              style="width: 100%; height: auto; display: block"
+            >
+              <defs>
+                <pattern id="mathGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <circle cx="2" cy="2" r="1" fill="rgba(255, 255, 255, 0.03)" />
+                </pattern>
+
+                <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur1" />
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur2" />
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur3" />
+                  <feMerge>
+                    <feMergeNode in="blur3" />
+                    <feMergeNode in="blur2" />
+                    <feMergeNode in="blur1" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                <filter id="dangerGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur1" />
+                  <feMerge>
+                    <feMergeNode in="blur1" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <rect width="800" height="400" fill="url(#mathGrid)" />
+
+              <text
+                x="200"
+                y="45"
+                fill="#a0aec0"
+                font-family="'Inter', sans-serif"
+                font-size="15"
+                font-weight="600"
+                letter-spacing="1"
+                text-anchor="middle"
+              >
+                PHYSICAL LAYOUT
+              </text>
+              <text
+                x="600"
+                y="45"
+                fill="#00ffca"
+                font-family="'Inter', sans-serif"
+                font-size="15"
+                font-weight="600"
+                letter-spacing="1"
+                text-anchor="middle"
+              >
+                TOPOLOGICAL GRAPH
+              </text>
+
+              <line
+                x1="400"
+                y1="30"
+                x2="400"
+                y2="370"
+                stroke="rgba(0, 255, 202, 0.15)"
+                stroke-dasharray="4 6"
+                stroke-width="2"
+              />
+
+              <g transform="translate(50, 80)">
+                <path
+                  d="M 0 50 Q 150 50 300 0 L 300 240 Q 150 190 0 240 Z"
+                  fill="#090d14"
+                  stroke="#131e2d"
+                  stroke-width="2"
+                />
+
+                <path
+                  d="M 0 -20 L 300 -20 L 300 20 Q 150 70 0 20 Z"
+                  fill="#111826"
+                  stroke="rgba(0, 255, 202, 0.2)"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M 0 260 L 300 260 L 300 220 Q 150 170 0 220 Z"
+                  fill="#111826"
+                  stroke="rgba(0, 255, 202, 0.2)"
+                  stroke-width="1.5"
+                />
+                <ellipse
+                  cx="100"
+                  cy="120"
+                  rx="60"
+                  ry="35"
+                  fill="#111826"
+                  stroke="rgba(0, 255, 202, 0.2)"
+                  stroke-width="1.5"
+                />
+                <ellipse
+                  cx="230"
+                  cy="120"
+                  rx="30"
+                  ry="25"
+                  fill="#111826"
+                  stroke="rgba(0, 255, 202, 0.2)"
+                  stroke-width="1.5"
+                />
+
+                <g fill="#1e293b" stroke="#334155" stroke-width="1.5">
+                  <rect x="60" y="25" width="12" height="65" rx="4" transform="rotate(-15 65 57)" />
+                  <rect x="110" y="32" width="12" height="65" rx="4" transform="rotate(15 115 64)" />
+                  <rect x="65" y="145" width="12" height="65" rx="4" transform="rotate(15 70 177)" />
+                  <rect x="110" y="150" width="12" height="65" rx="4" transform="rotate(-15 115 182)" />
+                  <rect x="160" y="114" width="40" height="12" rx="4" />
+                  <rect x="220" y="4" width="12" height="95" rx="4" transform="rotate(-10 225 51)" />
+                  <rect x="235" y="145" width="12" height="95" rx="4" transform="rotate(10 240 192)" />
+                </g>
+              </g>
+
+              <g transform="translate(450, 80)">
+                <path
+                  d="M 60 120 Q 80 40 150 0"
+                  fill="none"
+                  stroke="#00ffca"
+                  stroke-width="2.5"
+                  filter="url(#neonGlow)"
+                />
+                <path
+                  d="M 60 120 Q 120 70 150 0"
+                  fill="none"
+                  stroke="#ff2d55"
+                  stroke-width="2"
+                  filter="url(#dangerGlow)"
+                />
+
+                <path
+                  d="M 60 120 Q 80 200 150 240"
+                  fill="none"
+                  stroke="#00ffca"
+                  stroke-width="2.5"
+                  filter="url(#neonGlow)"
+                />
+                <path
+                  d="M 60 120 Q 120 170 150 240"
+                  fill="none"
+                  stroke="#ff2d55"
+                  stroke-width="2"
+                  filter="url(#dangerGlow)"
+                />
+
+                <path d="M 60 120 L 240 120" fill="none" stroke="#00ffca" stroke-width="2.5" filter="url(#neonGlow)" />
+
+                <path d="M 240 120 L 150 0" fill="none" stroke="#00ffca" stroke-width="2.5" filter="url(#neonGlow)" />
+                <path d="M 240 120 L 150 240" fill="none" stroke="#00ffca" stroke-width="2.5" filter="url(#neonGlow)" />
+
+                <circle
+                  cx="150"
+                  cy="0"
+                  r="14"
+                  fill="#090d14"
+                  stroke="#00ffca"
+                  stroke-width="3"
+                  filter="url(#neonGlow)"
+                />
+                <circle
+                  cx="150"
+                  cy="240"
+                  r="14"
+                  fill="#090d14"
+                  stroke="#00ffca"
+                  stroke-width="3"
+                  filter="url(#neonGlow)"
+                />
+                <circle
+                  cx="60"
+                  cy="120"
+                  r="14"
+                  fill="#090d14"
+                  stroke="#00ffca"
+                  stroke-width="3"
+                  filter="url(#neonGlow)"
+                />
+                <circle
+                  cx="240"
+                  cy="120"
+                  r="14"
+                  fill="#090d14"
+                  stroke="#00ffca"
+                  stroke-width="3"
+                  filter="url(#neonGlow)"
+                />
+
+                <text
+                  x="150"
+                  y="-22"
+                  fill="#ffffff"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  font-weight="600"
+                  text-anchor="middle"
+                >
+                  Node A
+                </text>
+                <text
+                  x="150"
+                  y="272"
+                  fill="#ffffff"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  font-weight="600"
+                  text-anchor="middle"
+                >
+                  Node B
+                </text>
+                <text
+                  x="35"
+                  y="124"
+                  fill="#ffffff"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  font-weight="600"
+                  text-anchor="end"
+                >
+                  Node C
+                </text>
+                <text
+                  x="265"
+                  y="124"
+                  fill="#ffffff"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  font-weight="600"
+                  text-anchor="start"
+                >
+                  Node D
+                </text>
+              </g>
+            </svg>
+          </div>
+          <p class="image-caption">
+            Fig 1. The Seven Bridges of Königsberg (left) and Euler's graph abstraction (right) — the birth of topology,
+            1736.
+          </p>
+        </div>
+
+        <div class="section-card" id="sec-1-2">
+          <div class="section-num">Section 1.2</div>
+          <h2>Topological Data Analysis — Seeing Beyond Statistics</h2>
+          <p>
+            By shifting our focus from the physical geography of bridges to the
+            <strong>abstract geometry of data</strong>. Traditional data analysis asks:
+            <em><span class="highlight">"What is the average? What is the variance?"</span></em>
+            <br />
+            Topological Data Analysis asks a fundamentally different question:
+            <strong
+              ><em><span class="highlight">"What is the shape of the data?"</span></em></strong
+            >
+          </p>
+          <p>
+            TDA brings Euler's topological thinking into the <strong>21st century</strong>. Given a point cloud $X =
+            \{x_1, x_2, \dots, x_n\} \subset \mathbb{R}^d$, it asks:
+            <span class="highlight">does this cloud have clusters? Loops? Voids?</span> These features — formally called
+            <strong><span class="highlight">topological invariants</span></strong> — reveal structural patterns that are
+            completely invisible to correlation matrices, PCA, or neural networks.
+          </p>
+          <p>
+            This is our first detective tool. But there's a problem: TDA requires a multi-dimensional
+            <strong>point cloud</strong>, and financial data is just a flat, one-dimensional ticker tape. To proceed, we
+            need a way to manufacture geometry from a single sequence of prices.
+          </p>
+
+          <div class="image-slot has-image">
+            <svg
+              viewBox="0 0 800 400"
+              xmlns="http://www.w3.org/2000/svg"
+              style="width: 100%; height: auto; display: block"
+            >
+              <defs>
+                <linearGradient id="bgFig2" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#0a0505" />
+                  <stop offset="100%" stop-color="#0a0f0f" />
+                </linearGradient>
+                <filter id="glowF2" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <rect width="800" height="400" fill="url(#bgFig2)" />
+              <line x1="400" y1="20" x2="400" y2="380" stroke="rgba(255,255,255,0.1)" stroke-dasharray="6 4" />
+
+              <text
+                x="200"
+                y="40"
+                fill="#e0e4ec"
+                font-family="'Inter', sans-serif"
+                font-size="14"
+                font-weight="600"
+                text-anchor="middle"
+              >
+                Raw Data (Point Cloud)
+              </text>
+              <text
+                x="600"
+                y="40"
+                fill="#00ffca"
+                font-family="'Inter', sans-serif"
+                font-size="14"
+                font-weight="600"
+                text-anchor="middle"
+              >
+                Topological Features
+              </text>
+
+              <g transform="translate(100, 100)">
+                <circle cx="50" cy="50" r="4" fill="#8892a4" />
+                <circle cx="65" cy="40" r="4" fill="#8892a4" />
+                <circle cx="55" cy="70" r="4" fill="#8892a4" />
+                <circle cx="35" cy="60" r="4" fill="#8892a4" />
+                <circle cx="80" cy="60" r="4" fill="#8892a4" />
+
+                <circle cx="120" cy="180" r="4" fill="#8892a4" />
+                <circle cx="180" cy="120" r="4" fill="#8892a4" />
+                <circle cx="240" cy="180" r="4" fill="#8892a4" />
+                <circle cx="180" cy="240" r="4" fill="#8892a4" />
+                <circle cx="140" cy="140" r="4" fill="#8892a4" />
+                <circle cx="220" cy="140" r="4" fill="#8892a4" />
+                <circle cx="220" cy="220" r="4" fill="#8892a4" />
+                <circle cx="140" cy="220" r="4" fill="#8892a4" />
+                <circle cx="180" cy="180" r="4" fill="#8892a4" opacity="0.3" />
+              </g>
+
+              <g transform="translate(500, 100)">
+                <polygon
+                  points="50,50 65,40 80,60 55,70 35,60"
+                  fill="rgba(255, 184, 48, 0.2)"
+                  stroke="#ffb830"
+                  stroke-width="2"
+                />
+                <line x1="50" y1="50" x2="55" y2="70" stroke="#ffb830" stroke-width="2" />
+                <line x1="65" y1="40" x2="55" y2="70" stroke="#ffb830" stroke-width="2" />
+                <line x1="35" y1="60" x2="80" y2="60" stroke="#ffb830" stroke-width="2" />
+
+                <circle cx="50" cy="50" r="4" fill="#ffb830" filter="url(#glowF2)" />
+                <circle cx="65" cy="40" r="4" fill="#ffb830" filter="url(#glowF2)" />
+                <circle cx="55" cy="70" r="4" fill="#ffb830" filter="url(#glowF2)" />
+                <circle cx="35" cy="60" r="4" fill="#ffb830" filter="url(#glowF2)" />
+                <circle cx="80" cy="60" r="4" fill="#ffb830" filter="url(#glowF2)" />
+
+                <text x="110" y="25" fill="#ffb830" font-family="'JetBrains Mono', monospace" font-size="12">
+                  Cluster (H0)
+                </text>
+
+                <polygon
+                  points="120,180 140,140 180,120 220,140 240,180 220,220 180,240 140,220"
+                  fill="none"
+                  stroke="#00ffca"
+                  stroke-width="3"
+                  filter="url(#glowF2)"
+                />
+
+                <circle cx="120" cy="180" r="4" fill="#00ffca" />
+                <circle cx="180" cy="120" r="4" fill="#00ffca" />
+                <circle cx="240" cy="180" r="4" fill="#00ffca" />
+                <circle cx="180" cy="240" r="4" fill="#00ffca" />
+                <circle cx="140" cy="140" r="4" fill="#00ffca" />
+                <circle cx="220" cy="140" r="4" fill="#00ffca" />
+                <circle cx="220" cy="220" r="4" fill="#00ffca" />
+                <circle cx="140" cy="220" r="4" fill="#00ffca" />
+                <circle cx="180" cy="180" r="4" fill="#8892a4" opacity="0.3" />
+
+                <text
+                  x="180"
+                  y="185"
+                  fill="#00ffca"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="14"
+                  font-weight="bold"
+                  text-anchor="middle"
+                >
+                  Loop (H1)
+                </text>
+              </g>
+            </svg>
+          </div>
+          <p class="image-caption">
+            Fig 2. A 2D point cloud and its underlying topological structure — clusters (H₀) and loops (H₁).
+          </p>
+        </div>
+
+        <div class="section-card" id="sec-1-3">
+          <div class="section-num">Section 1.3</div>
+          <h2>Takens' Time-Delay Embedding</h2>
+          <p>
+            The answer comes from an extraordinary result in dynamical systems theory.
+            <strong>Takens' Embedding Theorem</strong> (1981) proves that you can faithfully reconstruct the topology of
+            a dynamical system's attractor from <em>a single observed variable</em> — using nothing more than
+            <strong>time-delay coordinates</strong>. In plain terms: a flat price chart contains enough hidden
+            information to rebuild the market's full geometric shape.
+          </p>
+
+          <div class="callout">
+            <p>
+              <strong>Takens' Theorem.</strong> Given a smooth dynamical system and a generic observation function, the
+              map $\Phi: \mathcal{M} \to \mathbb{R}^{2m+1}$ defined by time-delay embedding is a diffeomorphism on the
+              attractor, where $m$ is the attractor's box-counting dimension.
+            </p>
+          </div>
+
+          <p>In practice, given a price series $P = \{p_1, p_2, \dots, p_N\}$, we construct vectors:</p>
+
+          <div class="math-block">
+            $$ \mathbf{v}_t = \begin{bmatrix} p_t \\ p_{t+\tau} \\ p_{t+2\tau} \\ \vdots \\ p_{t+(d-1)\tau}
+            \end{bmatrix} \in \mathbb{R}^d $$
+          </div>
+
+          <p>
+            Here, <strong>$d$</strong> is the <strong>embedding dimension</strong> (how many coordinates per vector) and
+            <strong>$\tau$</strong> is the <strong>time delay</strong> (the spacing between observations). Each vector
+            $\mathbf{v}_t$ becomes a single point in $d$-dimensional space. The collection of all these points forms our
+            <strong>point cloud</strong>.
+          </p>
+          <p>
+            A flat, one-dimensional price line has been transformed into a
+            <span class="highlight">multi-dimensional geometric object</span>. We finally have a shape that topology can
+            analyze. But a cloud of scattered points is formless on its own — we need a mathematical rule that decides
+            which points to connect. What are the building blocks of that connection?
+          </p>
+
+          <div class="image-slot has-image interactive-slot" style="margin: 28px 0">
+            <style>
+              * {
+                box-sizing: border-box;
+              }
+              canvas {
+                display: block;
+              }
+              .ctrl {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 13px;
+                color: var(--color-text-secondary);
+              }
+              .ctrl label {
+                min-width: 100px;
+              }
+              .ctrl span {
+                min-width: 38px;
+                text-align: right;
+                font-variant-numeric: tabular-nums;
+                color: var(--color-text-primary);
+              }
+              .panel-label {
+                font-size: 12px;
+                color: var(--color-text-secondary);
+                text-align: center;
+                margin: 0 0 4px;
+                letter-spacing: 0.04em;
+              }
+              .panels {
+                display: flex;
+                gap: 16px;
+                align-items: flex-start;
+              }
+              .panel {
+                flex: 1;
+              }
+              @keyframes fadeIn {
+                from {
+                  opacity: 0;
+                }
+                to {
+                  opacity: 1;
+                }
+              }
+            </style>
+            <div style="padding: 1rem 0 0">
+              <div class="panels">
+                <div class="panel">
+                  <p class="panel-label">1D time series x(t)</p>
+                  <canvas
+                    id="c1d"
+                    width="930"
+                    height="558"
+                    style="width: 100%; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary)"
+                  ></canvas>
+                </div>
+                <div class="panel">
+                  <p class="panel-label">3D phase space [x(t), x(t−τ), x(t−2τ)]</p>
+                  <canvas
+                    id="c3d"
+                    width="930"
+                    height="744"
+                    style="width: 100%; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary)"
+                  ></canvas>
+                </div>
+              </div>
+
+              <div style="margin: 14px 0 8px; display: flex; flex-direction: column; gap: 10px">
+                <div class="ctrl">
+                  <label>Delay τ</label>
+                  <input type="range" id="tau" min="1" max="60" value="14" step="1" style="flex: 1" />
+                  <span id="tau-val">14</span>
+                </div>
+                <div class="ctrl">
+                  <label>Signal type</label>
+                  <select
+                    id="sig"
+                    style="
+                      flex: 1;
+                      font-size: 13px;
+                      padding: 4px 8px;
+                      border-radius: 6px;
+                      border: 0.5px solid var(--color-border-secondary);
+                      background: var(--color-background-secondary);
+                      color: var(--color-text-primary);
+                    "
+                  >
+                    <option value="lorenz">Lorenz (chaotic)</option>
+                    <option value="sine">Pure sine</option>
+                    <option value="duffing">Duffing oscillator</option>
+                    <option value="noisy">Noisy sine</option>
+                  </select>
+                </div>
+                <div class="ctrl">
+                  <label>Speed</label>
+                  <input type="range" id="speed" min="1" max="6" value="3" step="1" style="flex: 1" />
+                  <span id="speed-val">3×</span>
+                </div>
+              </div>
+
+              <div
+                id="info"
+                style="
+                  font-size: 12px;
+                  color: var(--color-text-secondary);
+                  line-height: 1.5;
+                  padding: 8px 10px;
+                  background: var(--color-background-secondary);
+                  border-radius: 8px;
+                  border: 0.5px solid var(--color-border-tertiary);
+                "
+              ></div>
+            </div>
+
+            <script>
+              (function () {
+                const c1 = document.getElementById("c1d");
+                const c3 = document.getElementById("c3d");
+                const x1 = c1.getContext("2d");
+                const x3 = c3.getContext("2d");
+
+                const LX = [],
+                  LY = [],
+                  LZ = [];
+                (function buildLorenz() {
+                  let lx = 0.1,
+                    ly = 0,
+                    lz = 0;
+                  const s = 10,
+                    r = 28,
+                    b = 8 / 3,
+                    dt = 0.008;
+                  for (let i = 0; i < 8000; i++) {
+                    const dx = s * (ly - lx),
+                      dy = lx * (r - lz) - ly,
+                      dz = lx * ly - b * lz;
+                    lx += dx * dt;
+                    ly += dy * dt;
+                    lz += dz * dt;
+                    LX.push(lx);
+                    LY.push(ly);
+                    LZ.push(lz);
+                  }
+                })();
+
+                const DX = [],
+                  DV = [];
+                (function buildDuffing() {
+                  let px = 1,
+                    pv = 0;
+                  const dt = 0.02,
+                    alpha = -1,
+                    beta = 1,
+                    delta = 0.2,
+                    gamma = 0.3,
+                    omega = 1.2;
+                  for (let i = 0; i < 12000; i++) {
+                    const t = i * dt;
+                    const ax = -delta * pv - alpha * px - beta * px * px * px + gamma * Math.cos(omega * t);
+                    pv += ax * dt;
+                    px += pv * dt;
+                    DX.push(px);
+                    DV.push(pv);
+                  }
+                })();
+
+                function sample(type, i) {
+                  const N = 8000;
+                  i = ((i % N) + N) % N;
+                  switch (type) {
+                    case "lorenz":
+                      return LX[i] / 20;
+                    case "sine":
+                      return Math.sin(i * 0.04);
+                    case "duffing":
+                      return DX[i % DX.length] * 0.6;
+                    case "noisy":
+                      return Math.sin(i * 0.035) + Math.sin(i * 0.071) * 0.4 + (Math.random() - 0.5) * 0.25;
+                  }
+                }
+
+                const TRAIL = 700;
+                const trailX = [],
+                  trailY = [],
+                  trailZ = [];
+
+                let head = 200;
+                let raf;
+
+                function getParams() {
+                  return {
+                    tau: parseInt(document.getElementById("tau").value),
+                    type: document.getElementById("sig").value,
+                    speed: parseInt(document.getElementById("speed").value),
+                  };
+                }
+
+                function resize() {
+                  const dpr = window.devicePixelRatio || 1;
+                  for (const [c, ctx] of [
+                    [c1, x1],
+                    [c3, x3],
+                  ]) {
+                    const rect = c.getBoundingClientRect();
+                    if (!rect.width) return;
+                    c.width = rect.width * dpr;
+                    c.height = c === c1 ? rect.width * 0.6 * dpr : rect.width * 0.8 * dpr;
+                    ctx.scale(dpr, dpr);
+                  }
+                }
+
+                function draw1D(tau, type) {
+                  const dpr = window.devicePixelRatio || 1;
+                  const W = c1.width / dpr,
+                    H = c1.height / dpr;
+                  const isDark = matchMedia("(prefers-color-scheme: dark)").matches;
+                  x1.clearRect(0, 0, W, H);
+
+                  x1.fillStyle = isDark ? "#101218" : "#f8f8f6";
+                  x1.fillRect(0, 0, W, H);
+
+                  const N = Math.floor(W);
+                  const pad = 18;
+                  const plotW = W - 2 * pad,
+                    plotH = H - 2 * pad;
+
+                  x1.beginPath();
+                  for (let i = 0; i < N; i++) {
+                    const idx = head - N + i;
+                    const v = sample(type, idx);
+                    const px = pad + (i / N) * plotW;
+                    const py = pad + plotH / 2 - v * (plotH * 0.42);
+                    i === 0 ? x1.moveTo(px, py) : x1.lineTo(px, py);
+                  }
+                  x1.strokeStyle = isDark ? "#5ac8a8" : "#1a9e7a";
+                  x1.lineWidth = 1.5;
+                  x1.stroke();
+
+                  const dots = [0, tau, 2 * tau];
+                  const colors = ["#ff2d55", "#ff8c55", "#ffc155"];
+                  const labels = ["x(t)", "x(t-τ)", "x(t-2τ)"];
+                  for (let d = 0; d < 3; d++) {
+                    const idx = head - dots[d];
+                    const posInWindow = N - dots[d];
+                    if (posInWindow < 0 || posInWindow > N) continue;
+                    const v = sample(type, idx);
+                    const px = pad + (posInWindow / N) * plotW;
+                    const py = pad + plotH / 2 - v * (plotH * 0.42);
+
+                    x1.setLineDash([3, 3]);
+                    x1.beginPath();
+                    x1.moveTo(px, py);
+                    x1.lineTo(px, H - pad + 4);
+                    x1.strokeStyle = colors[d];
+                    x1.lineWidth = 1;
+                    x1.stroke();
+                    x1.setLineDash([]);
+
+                    x1.beginPath();
+                    x1.arc(px, py, 4.5, 0, Math.PI * 2);
+                    x1.fillStyle = colors[d];
+                    x1.fill();
+
+                    x1.fillStyle = colors[d];
+                    x1.font = "bold 10px var(--font-sans, sans-serif)";
+                    x1.textAlign = "center";
+                    x1.fillText(labels[d], px, H - pad + 13);
+                  }
+                }
+
+                function isoProject(v1, v2, v3) {
+                  const scale = 90;
+
+                  const px = v1 * scale - v2 * scale;
+                  const py = -v3 * (scale * 1.1) + v1 * (scale * 0.45) + v2 * (scale * 0.45);
+
+                  return { px, py };
+                }
+
+                function draw3D(tau, type) {
+                  const dpr = window.devicePixelRatio || 1;
+                  const W = c3.width / dpr,
+                    H = c3.height / dpr;
+                  const isDark = matchMedia("(prefers-color-scheme: dark)").matches;
+                  const cx = W / 2,
+                    cy = H / 2 + 10;
+
+                  x3.clearRect(0, 0, W, H);
+                  x3.fillStyle = isDark ? "#101218" : "#f8f8f6";
+                  x3.fillRect(0, 0, W, H);
+
+                  const axLen = 1.5;
+                  const axColors = ["#ff2d55", "#ff8c55", "#ffc155"];
+                  const axLabels = ["x(t)", "x(t−τ)", "x(t−2τ)"];
+                  const axVecs = [
+                    [axLen, 0, 0],
+                    [0, axLen, 0],
+                    [0, 0, axLen],
+                  ];
+                  for (let a = 0; a < 3; a++) {
+                    const [v1, v2, v3] = axVecs[a];
+                    const { px: ex, py: ey } = isoProject(v1, v2, v3);
+                    x3.beginPath();
+                    x3.moveTo(cx, cy);
+                    x3.lineTo(cx + ex, cy + ey);
+                    x3.strokeStyle = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.10)";
+                    x3.lineWidth = 1;
+                    x3.setLineDash([4, 4]);
+                    x3.stroke();
+                    x3.setLineDash([]);
+                    x3.fillStyle = isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)";
+                    x3.font = "10px var(--font-sans,sans-serif)";
+                    x3.textAlign = "center";
+                    x3.fillText(axLabels[a], cx + ex * 1.13, cy + ey * 1.13 + 3);
+                  }
+
+                  const len = trailX.length;
+                  if (len < 2) return;
+
+                  for (let i = 1; i < len; i++) {
+                    const t = i / len;
+                    const { px: ax, py: ay } = isoProject(trailX[i - 1], trailY[i - 1], trailZ[i - 1]);
+                    const { px: bx, py: by } = isoProject(trailX[i], trailY[i], trailZ[i]);
+                    const alpha = Math.pow(t, 1.4);
+                    x3.beginPath();
+                    x3.moveTo(cx + ax, cy + ay);
+                    x3.lineTo(cx + bx, cy + by);
+                    x3.strokeStyle = isDark ? `rgba(90,200,168,${alpha * 0.85})` : `rgba(20,140,100,${alpha * 0.8})`;
+                    x3.lineWidth = 1 + t * 1.2;
+                    x3.stroke();
+                  }
+
+                  const { px: cpx, py: cpy } = isoProject(trailX[len - 1], trailY[len - 1], trailZ[len - 1]);
+                  x3.beginPath();
+                  x3.arc(cx + cpx, cy + cpy, 5, 0, Math.PI * 2);
+                  x3.fillStyle = "#ff2d55";
+                  x3.fill();
+                  x3.beginPath();
+                  x3.arc(cx + cpx, cy + cpy, 9, 0, Math.PI * 2);
+                  x3.strokeStyle = "rgba(255,45,85,0.4)";
+                  x3.lineWidth = 1.5;
+                  x3.stroke();
+                }
+
+                function frame() {
+                  const { tau, type, speed } = getParams();
+
+                  for (let s = 0; s < speed; s++) {
+                    head++;
+                    const v1 = sample(type, head);
+                    const v2 = sample(type, head - tau);
+                    const v3 = sample(type, head - 2 * tau);
+                    trailX.push(v1);
+                    trailY.push(v2);
+                    trailZ.push(v3);
+                    if (trailX.length > TRAIL) {
+                      trailX.shift();
+                      trailY.shift();
+                      trailZ.shift();
+                    }
+                  }
+
+                  draw1D(tau, type);
+                  draw3D(tau, type);
+                  raf = requestAnimationFrame(frame);
+                }
+
+                const infos = {
+                  lorenz:
+                    "Lorenz system: chaotic attractor. A good τ reveals the butterfly wings. Too small → points cluster on the diagonal; too large → the structure collapses.",
+                  sine: "Pure sine wave. Delay embedding traces a perfect ellipse in phase space — the circle/ellipse shape confirms periodicity.",
+                  duffing:
+                    "Duffing oscillator: weakly chaotic. The toroidal structure in phase space emerges clearly when τ ≈ quarter-period.",
+                  noisy:
+                    "Noisy sine. Noise thickens the attractor. Observe how τ affects the signal-to-noise clarity of the reconstructed manifold.",
+                };
+
+                document.getElementById("sig").addEventListener("change", (e) => {
+                  trailX.length = trailY.length = trailZ.length = 0;
+                  document.getElementById("info").textContent = infos[e.target.value];
+                });
+                document.getElementById("tau").addEventListener("input", (e) => {
+                  document.getElementById("tau-val").textContent = e.target.value;
+                  trailX.length = trailY.length = trailZ.length = 0;
+                });
+                document.getElementById("speed").addEventListener("input", (e) => {
+                  document.getElementById("speed-val").textContent = e.target.value + "×";
+                });
+
+                resize();
+                frame();
+              })();
+            </script>
+          </div>
+
+          <p class="image-caption">
+            Fig 6. Takens embedding transforms a 1D price series into a multi-dimensional phase space reconstruction.
+          </p>
+        </div>
+
+        <div class="section-card" id="sec-1-4">
+          <div class="section-num">Section 1.4</div>
+          <h2>Simplicial Complexes — Building Blocks of Shape</h2>
+          <p>
+            The building blocks are called <strong>simplices</strong> — the geometric primitives from which all
+            topological shapes are assembled. To measure the "shape" of a point cloud, we need to connect the dots, and
+            the mathematical scaffolding for this is the <strong>simplicial complex</strong> — a combinatorial structure
+            built from elementary pieces called <strong>$k$-simplices</strong>:
+          </p>
+          <ul>
+            <li>
+              <strong><span class="highlight">0-simplex:</span></strong> A vertex (a single point)
+            </li>
+            <li>
+              <strong><span class="highlight">1-simplex:</span></strong> An edge (a line segment connecting two points)
+            </li>
+            <li>
+              <strong><span class="highlight">2-simplex:</span></strong> A triangle (three connected points with a
+              filled face)
+            </li>
+            <li>
+              <strong><span class="highlight">3-simplex:</span></strong> A tetrahedron (four points forming a solid)
+            </li>
+          </ul>
+          <p>
+            In general, a $k$-simplex is the convex hull of $k+1$ affinely independent points. A
+            <strong>simplicial complex</strong> $\mathcal{K}$ is a collection of simplices that is closed under taking
+            faces — if a triangle is in $\mathcal{K}$, then all three of its edges and all three vertices must also be
+            in $\mathcal{K}$.
+          </p>
+          <div class="math-block">
+            $$ \begin{aligned} &\sigma = [v_0, v_1, \dots, v_k] \quad \text{is a } k\text{-simplex} \\ &\mathcal{K}
+            \text{ is a simplicial complex if } \forall \sigma \in \mathcal{K}, \; \text{every face of } \sigma \in
+            \mathcal{K} \end{aligned} $$
+          </div>
+          <p>
+            We now have the vocabulary of shape. But a critical question remains: given a cloud of market-state points,
+            <em>which</em> simplices do we actually build? How close must two points be before we connect them with an
+            edge?
+          </p>
+
+          <div class="image-slot has-image">
+            <svg
+              viewBox="0 0 800 250"
+              xmlns="http://www.w3.org/2000/svg"
+              style="width: 100%; height: auto; display: block"
+            >
+              <defs>
+                <linearGradient id="bgFig3" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#050608" />
+                  <stop offset="100%" stop-color="#080c12" />
+                </linearGradient>
+                <filter id="glowF3" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <rect width="800" height="250" fill="url(#bgFig3)" />
+
+              <g transform="translate(100, 100)">
+                <circle cx="0" cy="20" r="6" fill="#00ffca" filter="url(#glowF3)" />
+                <text x="0" y="80" fill="#e0e4ec" font-family="'Inter', sans-serif" font-size="14" text-anchor="middle">
+                  0-simplex
+                </text>
+                <text
+                  x="0"
+                  y="100"
+                  fill="#8892a4"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  text-anchor="middle"
+                >
+                  (Vertex)
+                </text>
+              </g>
+
+              <g transform="translate(300, 100)">
+                <line x1="-30" y1="40" x2="30" y2="0" stroke="#00ffca" stroke-width="3" filter="url(#glowF3)" />
+                <circle cx="-30" cy="40" r="6" fill="#00ffca" />
+                <circle cx="30" cy="0" r="6" fill="#00ffca" />
+                <text x="0" y="80" fill="#e0e4ec" font-family="'Inter', sans-serif" font-size="14" text-anchor="middle">
+                  1-simplex
+                </text>
+                <text
+                  x="0"
+                  y="100"
+                  fill="#8892a4"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  text-anchor="middle"
+                >
+                  (Edge)
+                </text>
+              </g>
+
+              <g transform="translate(500, 100)">
+                <polygon points="-30,40 30,40 0,-10" fill="rgba(0, 255, 202, 0.2)" stroke="#00ffca" stroke-width="2" />
+                <circle cx="-30" cy="40" r="6" fill="#00ffca" />
+                <circle cx="30" cy="40" r="6" fill="#00ffca" />
+                <circle cx="0" cy="-10" r="6" fill="#00ffca" />
+                <text x="0" y="80" fill="#e0e4ec" font-family="'Inter', sans-serif" font-size="14" text-anchor="middle">
+                  2-simplex
+                </text>
+                <text
+                  x="0"
+                  y="100"
+                  fill="#8892a4"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  text-anchor="middle"
+                >
+                  (Triangle)
+                </text>
+              </g>
+
+              <g transform="translate(700, 100)">
+                <polygon points="-30,40 30,40 0,-20" fill="rgba(0, 255, 202, 0.3)" stroke="#00ffca" stroke-width="2" />
+                <line x1="-30" y1="40" x2="-5" y2="10" stroke="#00ffca" stroke-width="2" stroke-dasharray="3 3" />
+                <line x1="30" y1="40" x2="-5" y2="10" stroke="#00ffca" stroke-width="2" stroke-dasharray="3 3" />
+                <line x1="0" y1="-20" x2="-5" y2="10" stroke="#00ffca" stroke-width="2" stroke-dasharray="3 3" />
+                <circle cx="-5" cy="10" r="6" fill="#00ffca" opacity="0.6" />
+                <circle cx="-30" cy="40" r="6" fill="#00ffca" />
+                <circle cx="30" cy="40" r="6" fill="#00ffca" />
+                <circle cx="0" cy="-20" r="6" fill="#00ffca" />
+                <text x="0" y="80" fill="#e0e4ec" font-family="'Inter', sans-serif" font-size="14" text-anchor="middle">
+                  3-simplex
+                </text>
+                <text
+                  x="0"
+                  y="100"
+                  fill="#8892a4"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  text-anchor="middle"
+                >
+                  (Tetrahedron)
+                </text>
+              </g>
+            </svg>
+          </div>
+          <p class="image-caption">Fig 3. Progression from vertices to edges to triangles to tetrahedra.</p>
+        </div>
+
+        <div class="section-card" id="sec-1-5">
+          <div class="section-num">Section 1.5</div>
+          <h2>The Vietoris-Rips Complex</h2>
+          <p>
+            The answer is a single parameter: a distance threshold $\epsilon$. The
+            <strong>Vietoris-Rips complex</strong> provides an elegant, parameter-driven rule — connect any set of
+            points whose pairwise distances all fall within $2\epsilon$.
+          </p>
+
+          <div class="callout">
+            <p>
+              <strong>Definition.</strong> The Vietoris-Rips complex $VR_\epsilon(X)$ includes a simplex $[x_{i_0},
+              \dots, x_{i_k}]$ if and only if $d(x_{i_p}, x_{i_q}) \leq 2\epsilon$ for all pairs $0 \leq p, q \leq k$.
+            </p>
+          </div>
+
+          <p>
+            Picture a sphere of radius $\epsilon$ inflating outward from every data point simultaneously. At $\epsilon =
+            0$, all points are isolated — no connections. As $\epsilon$ grows, spheres overlap, edges appear, triangles
+            form, and higher-dimensional simplices crystallize. At $\epsilon = \infty$, everything merges into a single,
+            featureless blob.
+          </p>
+          <p>
+            The real structure lives in the <em>intermediate</em> scales — where the complex reveals the
+            <span class="highlight">true geometric fingerprint</span> of the data. But this raises a dangerous question:
+            which value of $\epsilon$ is the "right" one? Picking a single threshold would be arbitrary guesswork. We
+            need a way to study the shape at <em>every</em> scale simultaneously.
+          </p>
+
+          <div class="image-slot has-image">
+            <svg
+              viewBox="0 0 800 300"
+              xmlns="http://www.w3.org/2000/svg"
+              style="width: 100%; height: auto; display: block"
+            >
+              <defs>
+                <linearGradient id="bgFig4" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#050608" />
+                  <stop offset="100%" stop-color="#0b1016" />
+                </linearGradient>
+              </defs>
+              <rect width="800" height="300" fill="url(#bgFig4)" />
+
+              <line x1="266" y1="40" x2="266" y2="260" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4 4" />
+              <line x1="533" y1="40" x2="533" y2="260" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4 4" />
+
+              <g transform="translate(133, 140)">
+                <text
+                  x="0"
+                  y="-100"
+                  fill="#e0e4ec"
+                  font-family="'Inter', sans-serif"
+                  font-size="14"
+                  font-weight="600"
+                  text-anchor="middle"
+                >
+                  Scale ε = Small
+                </text>
+                <g fill="rgba(0, 255, 202, 0.1)" stroke="rgba(0, 255, 202, 0.4)">
+                  <circle cx="0" cy="-60" r="15" />
+                  <circle cx="50" cy="-30" r="15" />
+                  <circle cx="45" cy="35" r="15" />
+                  <circle cx="-10" cy="55" r="15" />
+                  <circle cx="-50" cy="20" r="15" />
+                  <circle cx="-45" cy="-25" r="15" />
+                </g>
+                <circle cx="0" cy="-60" r="3" fill="#00ffca" />
+                <circle cx="50" cy="-30" r="3" fill="#00ffca" />
+                <circle cx="45" cy="35" r="3" fill="#00ffca" />
+                <circle cx="-10" cy="55" r="3" fill="#00ffca" />
+                <circle cx="-50" cy="20" r="3" fill="#00ffca" />
+                <circle cx="-45" cy="-25" r="3" fill="#00ffca" />
+                <text
+                  x="0"
+                  y="100"
+                  fill="#8892a4"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  text-anchor="middle"
+                >
+                  0-simplices only
+                </text>
+              </g>
+
+              <g transform="translate(400, 140)">
+                <text
+                  x="0"
+                  y="-100"
+                  fill="#e0e4ec"
+                  font-family="'Inter', sans-serif"
+                  font-size="14"
+                  font-weight="600"
+                  text-anchor="middle"
+                >
+                  Scale ε = Medium
+                </text>
+
+                <g fill="rgba(0, 255, 202, 0.1)" stroke="rgba(0, 255, 202, 0.3)">
+                  <circle cx="0" cy="-60" r="32" />
+                  <circle cx="50" cy="-30" r="32" />
+                  <circle cx="45" cy="35" r="32" />
+                  <circle cx="-10" cy="55" r="32" />
+                  <circle cx="-50" cy="20" r="32" />
+                  <circle cx="-45" cy="-25" r="32" />
+                </g>
+
+                <g stroke="#00ffca" stroke-width="2" fill="none">
+                  <line x1="0" y1="-60" x2="50" y2="-30" />
+                  <line x1="50" y1="-30" x2="45" y2="35" />
+                  <line x1="45" y1="35" x2="-10" y2="55" />
+                  <line x1="-10" y1="55" x2="-50" y2="20" />
+                  <line x1="-50" y1="20" x2="-45" y2="-25" />
+                  <line x1="-45" y1="-25" x2="0" y2="-60" />
+                </g>
+
+                <g fill="#00ffca">
+                  <circle cx="0" cy="-60" r="4" />
+                  <circle cx="50" cy="-30" r="4" />
+                  <circle cx="45" cy="35" r="4" />
+                  <circle cx="-10" cy="55" r="4" />
+                  <circle cx="-50" cy="20" r="4" />
+                  <circle cx="-45" cy="-25" r="4" />
+                </g>
+
+                <text
+                  x="0"
+                  y="100"
+                  fill="#8892a4"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  text-anchor="middle"
+                >
+                  H1 Loop appears
+                </text>
+              </g>
+
+              <g transform="translate(666, 140)">
+                <text
+                  x="0"
+                  y="-100"
+                  fill="#e0e4ec"
+                  font-family="'Inter', sans-serif"
+                  font-size="14"
+                  font-weight="600"
+                  text-anchor="middle"
+                >
+                  Scale ε = Large
+                </text>
+                <g fill="rgba(0, 255, 202, 0.05)" stroke="none">
+                  <circle cx="0" cy="-60" r="50" />
+                  <circle cx="50" cy="-30" r="50" />
+                  <circle cx="45" cy="35" r="50" />
+                  <circle cx="-10" cy="55" r="50" />
+                  <circle cx="-50" cy="20" r="50" />
+                  <circle cx="-45" cy="-25" r="50" />
+                </g>
+                <polygon
+                  points="0,-60 50,-30 45,35 -10,55 -50,20 -45,-25"
+                  fill="rgba(0, 255, 202, 0.3)"
+                  stroke="#00ffca"
+                  stroke-width="1.5"
+                />
+                <line x1="0" y1="-60" x2="45" y2="35" stroke="#00ffca" stroke-width="1.5" />
+                <line x1="0" y1="-60" x2="-10" y2="55" stroke="#00ffca" stroke-width="1.5" />
+                <line x1="0" y1="-60" x2="-50" y2="20" stroke="#00ffca" stroke-width="1.5" />
+                <line x1="50" y1="-30" x2="-10" y2="55" stroke="#00ffca" stroke-width="1.5" />
+                <line x1="50" y1="-30" x2="-50" y2="20" stroke="#00ffca" stroke-width="1.5" />
+                <line x1="50" y1="-30" x2="-45" y2="-25" stroke="#00ffca" stroke-width="1.5" />
+                <line x1="45" y1="35" x2="-50" y2="20" stroke="#00ffca" stroke-width="1.5" />
+                <line x1="45" y1="35" x2="-45" y2="-25" stroke="#00ffca" stroke-width="1.5" />
+                <line x1="-10" y1="55" x2="-45" y2="-25" stroke="#00ffca" stroke-width="1.5" />
+
+                <circle cx="0" cy="-60" r="4" fill="#00ffca" />
+                <circle cx="50" cy="-30" r="4" fill="#00ffca" />
+                <circle cx="45" cy="35" r="4" fill="#00ffca" />
+                <circle cx="-10" cy="55" r="4" fill="#00ffca" />
+                <circle cx="-50" cy="20" r="4" fill="#00ffca" />
+                <circle cx="-45" cy="-25" r="4" fill="#00ffca" />
+                <text
+                  x="0"
+                  y="100"
+                  fill="#8892a4"
+                  font-family="'JetBrains Mono', monospace"
+                  font-size="12"
+                  text-anchor="middle"
+                >
+                  Loop dies (filled in)
+                </text>
+              </g>
+            </svg>
+          </div>
+          <p class="image-caption">Fig 4. The Vietoris-Rips complex evolving as the distance threshold ε increases.</p>
+        </div>
+
+        <div class="section-card" id="sec-1-6">
+          <div class="section-num">Section 1.6</div>
+          <h2>Persistent Homology — The Memory of Shape</h2>
+          <p>
+            This is exactly what <strong>Persistent Homology</strong> does. Instead of committing to a single
+            $\epsilon$, it studies the <em>entire movie</em> — the complete sequence of complexes as $\epsilon$ sweeps
+            from $0$ to $\infty$. This growing sequence is called a <strong>filtration</strong>:
+          </p>
+
+          <div class="math-block">
+            $$ \emptyset = \mathcal{K}_0 \subseteq \mathcal{K}_1 \subseteq \mathcal{K}_2 \subseteq \dots \subseteq
+            \mathcal{K}_m $$
+          </div>
+
+          <p>
+            As we traverse this filtration, topological features are <strong>born</strong> (they appear) and
+            <strong>die</strong> (they get filled in or merge). Each feature is tracked as a pair:
+          </p>
+
+          <div class="math-block">
+            $$ (b_i, d_i) \quad \text{where } b_i = \text{birth scale}, \; d_i = \text{death scale} $$ $$
+            \text{Persistence} = d_i - b_i $$
+          </div>
+
+          <p>
+            A feature with <strong>high persistence</strong> (large $d_i - b_i$) is a genuine structural signal — it
+            survived across many scales. A feature that flickers in and out is noise. This is how persistent homology
+            separates <span class="highlight">signal from noise</span> — without any parameter tuning.
+          </p>
+
+          <h3><span class="highlight">Betti Numbers: Counting the Features</span></h3>
+          <p>
+            We quantify what persistent homology finds using <strong>Betti numbers</strong> ($\beta_k$) — the rank of
+            the $k$-th homology group $H_k$. Each one counts a different type of topological feature:
+          </p>
+          <ul>
+            <li>
+              <strong>$\beta_0$</strong> = number of <strong>connected components</strong> (clusters). How fragmented is
+              the market?
+            </li>
+            <li>
+              <strong>$\beta_1$</strong> = number of <strong>1-dimensional loops</strong> (cycles). Is the market
+              trapped in a feedback cycle?
+            </li>
+            <li>
+              <strong>$\beta_2$</strong> = number of <strong>2-dimensional voids</strong> (cavities). Are there hollow
+              zones where liquidity has evaporated?
+            </li>
+          </ul>
+          <p>
+            The collection of all $(b_i, d_i)$ pairs forms a <strong>persistence diagram</strong> — a complete
+            topological fingerprint of the data's shape at every scale. The theory is now complete. We have the tools:
+            Takens embedding creates the point cloud, simplicial complexes give it structure, and persistent homology
+            reads its shape. The question that remains is practical:
+            <em>can this mathematics actually detect a market crash?</em>
+          </p>
+
+          <div class="image-slot has-image">
+            <svg
+              viewBox="0 0 800 450"
+              xmlns="http://www.w3.org/2000/svg"
+              style="width: 100%; height: auto; display: block"
+            >
+              <defs>
+                <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#0a0c10" />
+                  <stop offset="100%" stop-color="#000000" />
+                </linearGradient>
+                <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter id="glowAmber" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <rect width="800" height="450" fill="url(#bg1)" />
+
+              <g stroke="rgba(255,255,255,0.05)" stroke-width="1">
+                <line x1="100" y1="0" x2="100" y2="450" />
+                <line x1="200" y1="0" x2="200" y2="450" />
+                <line x1="300" y1="0" x2="300" y2="450" />
+                <line x1="400" y1="0" x2="400" y2="450" />
+                <line x1="500" y1="0" x2="500" y2="450" />
+                <line x1="600" y1="0" x2="600" y2="450" />
+                <line x1="700" y1="0" x2="700" y2="450" />
+                <line x1="0" y1="100" x2="800" y2="100" />
+                <line x1="0" y1="200" x2="800" y2="200" />
+                <line x1="0" y1="300" x2="800" y2="300" />
+                <line x1="0" y1="400" x2="800" y2="400" />
+              </g>
+
+              <line x1="60" y1="390" x2="740" y2="390" stroke="#8892a4" stroke-width="2" />
+              <line x1="60" y1="390" x2="60" y2="40" stroke="#8892a4" stroke-width="2" />
+              <text
+                x="740"
+                y="415"
+                fill="#8892a4"
+                font-family="'JetBrains Mono', monospace"
+                font-size="12"
+                text-anchor="end"
+              >
+                Birth (ε)
+              </text>
+              <text
+                x="40"
+                y="40"
+                fill="#8892a4"
+                font-family="'JetBrains Mono', monospace"
+                font-size="12"
+                transform="rotate(-90 40 40)"
+                text-anchor="end"
+              >
+                Death (ε)
+              </text>
+
+              <line
+                x1="60"
+                y1="390"
+                x2="410"
+                y2="40"
+                stroke="#ff2d55"
+                stroke-width="1"
+                stroke-dasharray="8 4"
+                opacity="0.6"
+              />
+
+              <g fill="rgba(0, 255, 202, 0.3)">
+                <circle cx="80" cy="360" r="3" />
+                <circle cx="95" cy="340" r="3.5" />
+                <circle cx="110" cy="330" r="2.5" />
+                <circle cx="130" cy="315" r="4" />
+                <circle cx="140" cy="290" r="3" />
+                <circle cx="160" cy="285" r="2.5" />
+                <circle cx="180" cy="260" r="3" />
+                <circle cx="195" cy="250" r="3.5" />
+                <circle cx="210" cy="230" r="4" />
+                <circle cx="225" cy="220" r="2" />
+              </g>
+
+              <circle cx="70" cy="120" r="6" fill="#ffb830" filter="url(#glowAmber)" />
+              <circle cx="85" cy="80" r="7" fill="#ffb830" filter="url(#glowAmber)" />
+              <circle cx="180" cy="100" r="6" fill="#00ffca" filter="url(#glowGreen)" />
+              <circle cx="250" cy="160" r="5" fill="#00ffca" filter="url(#glowGreen)" />
+
+              <g transform="translate(620, 60)">
+                <rect
+                  x="0"
+                  y="0"
+                  width="130"
+                  height="70"
+                  fill="rgba(8, 10, 14, 0.8)"
+                  stroke="rgba(255,255,255,0.1)"
+                  rx="6"
+                />
+                <circle cx="15" cy="20" r="5" fill="#ffb830" filter="url(#glowAmber)" />
+                <text x="30" y="24" fill="#e0e4ec" font-family="'JetBrains Mono', monospace" font-size="11">
+                  H0 (Clusters)
+                </text>
+                <circle cx="15" cy="45" r="5" fill="#00ffca" filter="url(#glowGreen)" />
+                <text x="30" y="49" fill="#e0e4ec" font-family="'JetBrains Mono', monospace" font-size="11">
+                  H1 (Loops)
+                </text>
+              </g>
+            </svg>
+          </div>
+          <p class="image-caption">
+            Fig 5. Persistence diagram — points far from the diagonal represent long-lived (significant) features.
+          </p>
+        </div>
+
+        <div class="part-divider">
+          <div class="part-label">Part II</div>
+          <div class="part-title">Detecting Market Crashes with Geometry</div>
+          <hr class="part-rule" />
+        </div>
+
+        <p class="lead-text">
+          The math is complete. But does it <em>work</em>?<br />
+          We built a real-world application to find out.
+        </p>
+
+        <div class="section-card danger-card" id="sec-2-1">
+          <div class="section-num">Section 2.1</div>
+          <h2>The TDA Pipeline — From Price to Prediction</h2>
+          <p>
+            The <strong>TDA Market Risk Analyzer</strong> chains together the three mathematical tools from Part I into
+            a single, automated pipeline that runs on every uploaded financial dataset:
+          </p>
+
+          <h3><span class="highlight">Stage 1: Takens Embedding</span></h3>
+          <p>
+            A rolling window (default: 50 data points) slides across the price series. Within each window, the closing
+            prices are normalized and embedded into $\mathbb{R}^d$ using Takens' delay coordinates. The result is a
+            localized point cloud representing the market's <em>current geometric state</em>.
+          </p>
+
+          <h3><span class="highlight">Stage 2: Persistent Homology via Vietoris-Rips</span></h3>
+          <p>
+            The application builds a Vietoris-Rips filtration on each embedded window and computes persistent homology
+            using one of three backends:
+          </p>
+          <ul>
+            <li><strong>Giotto-TDA</strong> — production-grade, optimized C++ bindings</li>
+            <li><strong>Ripser</strong> — fast, memory-efficient Ripser algorithm</li>
+            <li><strong>Scipy Fallback</strong> — heuristic approximation, zero dependencies</li>
+          </ul>
+
+          <h3><span class="highlight">Stage 3: Risk Index = L₁ Persistence Norm</span></h3>
+          <p>
+            For each window, the system computes the <strong>total persistence</strong> of all $H_1$ features
+            (1-dimensional loops):
+          </p>
+
+          <div class="math-block danger-math">
+            $$ \text{Risk Index}(t) = \sum_{i} (d_i - b_i) \quad \text{for all } H_1 \text{ features in window } t $$
+          </div>
+
+          <p>
+            A <strong>dynamic threshold</strong> is computed as the statistical boundary between normal volatility and
+            structural danger:
+          </p>
+
+          <div class="math-block danger-math">$$ \text{Threshold} = \mu_{\text{risk}} + 2\sigma_{\text{risk}} $$</div>
+
+          <p>
+            When the Risk Index crosses this threshold, the system flags an
+            <span class="danger-text">Instability Zone</span> — the market's topological structure is collapsing. The
+            pipeline produces a concrete, binary signal. But this raises a deeper question: <em>why</em> do topological
+            loops spike right before a crash? What is the financial mechanism behind this geometric phenomenon?
+          </p>
+
+          <style>
+            .tda-pipeline * {
+              box-sizing: border-box;
+              margin: 0;
+              padding: 0;
+            }
+            .tda-pipeline .wrap {
+              padding: 1rem 0 0;
+              font-family: var(--font-sans, sans-serif);
+            }
+            .tda-pipeline .row {
+              display: flex;
+              gap: 0;
+            }
+            .tda-pipeline .panel {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              align-items: stretch;
+            }
+            .tda-pipeline canvas {
+              display: block;
+              width: 100%;
+            }
+            .tda-pipeline .plabel {
+              font-size: 11px;
+              color: var(--color-text-secondary);
+              text-align: center;
+              padding: 5px 0 3px;
+              letter-spacing: 0.05em;
+              text-transform: uppercase;
+            }
+            .tda-pipeline .arrow-col {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              width: 32px;
+              flex-shrink: 0;
+              gap: 4px;
+            }
+            .tda-pipeline .arrow-col svg {
+              width: 22px;
+              height: 22px;
+            }
+            .tda-pipeline .arrow-col span {
+              font-size: 10px;
+              color: var(--color-text-tertiary);
+              text-align: center;
+              line-height: 1.2;
+              writing-mode: horizontal-tb;
+            }
+            .tda-pipeline .controls {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 10px 20px;
+              margin: 12px 0 8px;
+              align-items: center;
+            }
+            .tda-pipeline .ctrl {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 12px;
+              color: var(--color-text-secondary);
+            }
+            .tda-pipeline .ctrl label {
+              min-width: 56px;
+            }
+            .tda-pipeline .ctrl span {
+              min-width: 28px;
+              text-align: right;
+              color: var(--color-text-primary);
+              font-variant-numeric: tabular-nums;
+            }
+            .tda-pipeline .stats {
+              display: flex;
+              gap: 8px;
+              flex-wrap: wrap;
+              margin: 6px 0 0;
+            }
+            .tda-pipeline .stat {
+              background: var(--color-background-secondary);
+              border-radius: 8px;
+              padding: 6px 12px;
+              font-size: 12px;
+              color: var(--color-text-secondary);
+            }
+            .tda-pipeline .stat b {
+              color: var(--color-text-primary);
+              font-weight: 500;
+              margin-left: 4px;
+            }
+            .tda-pipeline .step-pills {
+              display: flex;
+              gap: 6px;
+              margin: 0 0 10px;
+              flex-wrap: wrap;
+            }
+            .tda-pipeline .pill {
+              font-size: 11px;
+              padding: 3px 10px;
+              border-radius: 20px;
+              border: 0.5px solid var(--color-border-secondary);
+              color: var(--color-text-secondary);
+              cursor: pointer;
+              transition: background 0.2s;
+            }
+            .tda-pipeline .pill.active {
+              background: var(--color-background-info);
+              color: var(--color-text-info);
+              border-color: var(--color-border-info);
+            }
+          </style>
+
+          <div
+            class="tda-pipeline interactive-slot"
+            style="
+              margin: 32px 0;
+              border: 1px solid rgba(0, 255, 202, 0.2);
+              border-radius: 12px;
+              padding: 20px;
+              background: linear-gradient(135deg, #050608 0%, #0b1016 100%);
+            "
+          >
+            <h3 style="font-size: 16px; margin-bottom: 12px; color: #e0e4ec; text-align: center">
+              Interactive Pipeline Summary
+            </h3>
+            <div class="wrap">
+              <div class="step-pills">
+                <div class="pill active" id="pill0">1 · Signal</div>
+                <div class="pill" id="pill1">2 · Delay embedding</div>
+                <div class="pill" id="pill2">3 · Phase space</div>
+                <div class="pill" id="pill3">4 · VR complex</div>
+              </div>
+
+              <div class="row">
+                <div class="panel">
+                  <div class="plabel">1 · scalar signal x(t)</div>
+                  <canvas id="cSig" height="175" width="233"></canvas>
+                </div>
+                <div class="arrow-col">
+                  <svg viewBox="0 0 22 22">
+                    <path
+                      d="M4 11h14M13 6l5 5-5 5"
+                      fill="none"
+                      stroke="var(--color-border-primary)"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></path>
+                  </svg>
+                  <span>τ delay</span>
+                </div>
+                <div class="panel">
+                  <div class="plabel">2 · delay vectors</div>
+                  <canvas id="cVec" height="175" width="233"></canvas>
+                </div>
+                <div class="arrow-col">
+                  <svg viewBox="0 0 22 22">
+                    <path
+                      d="M4 11h14M13 6l5 5-5 5"
+                      fill="none"
+                      stroke="var(--color-border-primary)"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></path>
+                  </svg>
+                  <span>project</span>
+                </div>
+                <div class="panel">
+                  <div class="plabel">3 · phase space</div>
+                  <canvas id="cPhase" height="175" width="233"></canvas>
+                </div>
+                <div class="arrow-col">
+                  <svg viewBox="0 0 22 22">
+                    <path
+                      d="M4 11h14M13 6l5 5-5 5"
+                      fill="none"
+                      stroke="var(--color-border-primary)"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></path>
+                  </svg>
+                  <span>ε ball</span>
+                </div>
+                <div class="panel">
+                  <div class="plabel">4 · VR complex</div>
+                  <canvas id="cVR" height="175" width="233"></canvas>
+                </div>
+              </div>
+
+              <div class="controls">
+                <div class="ctrl">
+                  <label>Signal</label>
+                  <select
+                    id="sig2"
+                    style="
+                      font-size: 12px;
+                      padding: 3px 6px;
+                      border-radius: 6px;
+                      border: 0.5px solid var(--color-border-secondary);
+                      background: var(--color-background-secondary);
+                      color: var(--color-text-primary);
+                    "
+                  >
+                    <option value="lorenz">Lorenz</option>
+                    <option value="sine">Sine</option>
+                    <option value="duffing">Duffing</option>
+                  </select>
+                </div>
+                <div class="ctrl">
+                  <label>Delay τ</label>
+                  <input type="range" id="tau2" min="2" max="50" value="14" step="1" style="width: 90px" />
+                  <span id="tauV">14</span>
+                </div>
+                <div class="ctrl">
+                  <label>Radius ε</label>
+                  <input type="range" id="eps" min="1" max="100" value="38" step="1" style="width: 90px" />
+                  <span id="epsV">0.38</span>
+                </div>
+                <div class="ctrl">
+                  <label>Speed</label>
+                  <input type="range" id="spd2" min="1" max="8" value="3" step="1" style="width: 70px" />
+                  <span id="spdV">3×</span>
+                </div>
+              </div>
+
+              <div class="stats">
+                <div class="stat">H₀ components<b id="h0">1</b></div>
+                <div class="stat">H₁ loops<b id="h1">0</b></div>
+                <div class="stat">edges<b id="ne">74</b></div>
+                <div class="stat">triangles<b id="nt">211</b></div>
+                <div class="stat">VR pts<b id="np">14</b></div>
+              </div>
+            </div>
+
+            <script>
+              (function () {
+                const dpr = window.devicePixelRatio || 1;
+                const ids = ["cSig", "cVec", "cPhase", "cVR"];
+                const cvs = ids.map((id) => document.getElementById(id));
+                const ctxs = cvs.map((c) => c.getContext("2d"));
+
+                function resizeAll() {
+                  cvs.forEach((c, i) => {
+                    const r = c.getBoundingClientRect();
+                    if (!r.width) return;
+                    c.width = Math.round(r.width * dpr);
+                    c.height = Math.round(140 * dpr);
+                    ctxs[i].setTransform(dpr, 0, 0, dpr, 0, 0);
+                  });
+                }
+                resizeAll();
+
+                const dark = () => matchMedia("(prefers-color-scheme: dark)").matches;
+                const TC = () => (dark() ? "#5DCAA5" : "#00ffca");
+                const TC2 = () => (dark() ? "#AFA9EC" : "#ff2d55");
+                const BG = () => (dark() ? "#111318" : "transparent");
+                const GR = () => (dark() ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.05)");
+                const TXT = () => (dark() ? "#9ca3af" : "#6b7280");
+
+                const LX = [],
+                  LY = [],
+                  LZ = [];
+                (function () {
+                  let x = 0.1,
+                    y = 0,
+                    z = 0;
+                  const s = 10,
+                    r = 28,
+                    b = 8 / 3,
+                    dt = 0.008;
+                  for (let i = 0; i < 9000; i++) {
+                    const dx = s * (y - x),
+                      dy = x * (r - z) - y,
+                      dz = x * y - b * z;
+                    x += dx * dt;
+                    y += dy * dt;
+                    z += dz * dt;
+                    LX.push(x);
+                    LY.push(y);
+                    LZ.push(z);
+                  }
+                })();
+
+                const DX = [];
+                (function () {
+                  let px = 1,
+                    pv = 0;
+                  const dt = 0.02,
+                    al = -1,
+                    be = 1,
+                    de = 0.2,
+                    ga = 0.3,
+                    om = 1.2;
+                  for (let i = 0; i < 12000; i++) {
+                    const ax = -de * pv - al * px - be * px * px * px + ga * Math.cos(om * i * dt);
+                    pv += ax * dt;
+                    px += pv * dt;
+                    DX.push(px);
+                  }
+                })();
+
+                function sampleRaw(type, i) {
+                  const N = LX.length;
+                  i = ((i % N) + N) % N;
+                  if (type === "lorenz") return LX[i] / 20;
+                  if (type === "sine") return Math.sin(i * 0.04);
+                  if (type === "duffing") return DX[i % DX.length] * 0.6;
+                }
+
+                let head = 300;
+                const TRAIL = 500;
+                const phTrailX = [],
+                  phTrailY = [],
+                  phTrailZ = [];
+
+                function getP() {
+                  return {
+                    tau: parseInt(document.getElementById("tau2").value),
+                    eps: parseInt(document.getElementById("eps").value) / 100,
+                    type: document.getElementById("sig2").value,
+                    spd: parseInt(document.getElementById("spd2").value),
+                  };
+                }
+
+                function drawSig(ctx, W, H, type, tau) {
+                  ctx.clearRect(0, 0, W, H);
+                  ctx.fillStyle = "transparent";
+                  ctx.fillRect(0, 0, W, H);
+                  const pad = 16,
+                    pw = W - 2 * pad,
+                    ph = H - 2 * pad;
+
+                  ctx.strokeStyle = "rgba(255,255,255,0.05)";
+                  ctx.lineWidth = 0.5;
+                  for (let g = 1; g < 4; g++) {
+                    ctx.beginPath();
+                    ctx.moveTo(pad, pad + (ph * g) / 4);
+                    ctx.lineTo(W - pad, pad + (ph * g) / 4);
+                    ctx.stroke();
+                  }
+
+                  const N = Math.floor(pw);
+                  ctx.beginPath();
+                  for (let i = 0; i < N; i++) {
+                    const v = sampleRaw(type, head - N + i);
+                    const x = pad + i,
+                      y = pad + ph / 2 - v * (ph * 0.44);
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                  }
+                  ctx.strokeStyle = "#00ffca";
+                  ctx.lineWidth = 1.5;
+                  ctx.stroke();
+
+                  const cols = ["#ff2d55", "#ff8c55", "#ffc155"];
+                  const labs = ["x(t)", "x(t−τ)", "x(t−2τ)"];
+                  for (let d = 0; d < 3; d++) {
+                    const posInWindow = N - d * tau;
+                    if (posInWindow < 0 || posInWindow > N) continue;
+                    const v = sampleRaw(type, head - d * tau);
+                    const x = pad + posInWindow,
+                      y = pad + ph / 2 - v * (ph * 0.44);
+                    ctx.setLineDash([3, 3]);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x, H - pad + 2);
+                    ctx.strokeStyle = cols[d];
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = cols[d];
+                    ctx.fill();
+                    ctx.fillStyle = cols[d];
+                    ctx.font = `500 10px var(--font-sans,sans-serif)`;
+                    ctx.textAlign = "center";
+                    ctx.fillText(labs[d], x, H - pad + 11);
+                  }
+                }
+
+                function drawVec(ctx, W, H, type, tau) {
+                  ctx.clearRect(0, 0, W, H);
+                  ctx.fillStyle = "transparent";
+                  ctx.fillRect(0, 0, W, H);
+                  const n = 7,
+                    cw = W / (n + 1),
+                    ch = (H - 30) / 4;
+                  ctx.font = `11px var(--font-mono,monospace)`;
+                  ctx.textAlign = "center";
+                  const cols = ["#ff2d55", "#ff8c55", "#ffc155"];
+                  const rowLabs = ["x(t)", "x(t−τ)", "x(t−2τ)"];
+                  for (let row = 0; row < 3; row++) {
+                    ctx.fillStyle = cols[row];
+                    ctx.fillText(rowLabs[row], cw * 0.5, 16 + row * ch + ch / 2 + 4);
+                  }
+                  for (let col = 0; col < n; col++) {
+                    for (let row = 0; row < 3; row++) {
+                      const v = sampleRaw(type, head - col * 3 - row * tau);
+                      const norm = (v + 1) / 2;
+                      const alpha = 0.15 + norm * 0.7;
+                      const x = cw * (col + 1),
+                        y = 20 + row * ch;
+                      ctx.fillStyle = `rgba(0,255,202,${alpha * 0.7})`;
+                      ctx.fillRect(x - cw * 0.38, y + 2, cw * 0.76, ch - 4);
+                      ctx.fillStyle = "#a0aec0";
+                      ctx.font = "9px var(--font-mono,monospace)";
+                      ctx.fillText(v.toFixed(2), x, y + ch / 2 + 3);
+                    }
+                  }
+
+                  ctx.fillStyle = "#6b7280";
+                  ctx.font = "10px var(--font-sans,sans-serif)";
+                  ctx.fillText("← recent time windows →", W / 2, H - 4);
+                }
+
+                function isoP(v1, v2, v3) {
+                  return { px: v1 * 38 - v2 * 38, py: -v3 * 42 + v1 * 18 + v2 * 18 };
+                }
+                function drawPhase(ctx, W, H) {
+                  ctx.clearRect(0, 0, W, H);
+                  ctx.fillStyle = "transparent";
+                  ctx.fillRect(0, 0, W, H);
+                  const cx = W / 2,
+                    cy = H / 2 + 8;
+
+                  ctx.setLineDash([4, 4]);
+                  ctx.lineWidth = 0.5;
+                  ctx.strokeStyle = "rgba(255,255,255,0.1)";
+                  [
+                    [1, 0, 0],
+                    [0, 1, 0],
+                    [0, 0, 1],
+                  ].forEach(([a, b, c]) => {
+                    const { px, py } = isoP(a * 0.9, b * 0.9, c * 0.9);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx + px, cy + py);
+                    ctx.stroke();
+                  });
+                  ctx.setLineDash([]);
+
+                  const len = phTrailX.length;
+                  if (len > 1) {
+                    for (let i = 1; i < len; i++) {
+                      const t = i / len;
+                      const { px: ax, py: ay } = isoP(phTrailX[i - 1], phTrailY[i - 1], phTrailZ[i - 1]);
+                      const { px: bx, py: by } = isoP(phTrailX[i], phTrailY[i], phTrailZ[i]);
+                      ctx.beginPath();
+                      ctx.moveTo(cx + ax, cy + ay);
+                      ctx.lineTo(cx + bx, cy + by);
+                      ctx.strokeStyle = `rgba(0,255,202,${Math.pow(t, 1.3) * 0.9})`;
+                      ctx.lineWidth = 0.8 + t * 1.2;
+                      ctx.stroke();
+                    }
+                    const { px, py } = isoP(phTrailX[len - 1], phTrailY[len - 1], phTrailZ[len - 1]);
+                    ctx.beginPath();
+                    ctx.arc(cx + px, cy + py, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = "#ff2d55";
+                    ctx.fill();
+                  }
+                }
+
+                function drawVR(ctx, W, H, type, tau, epsFrac) {
+                  ctx.clearRect(0, 0, W, H);
+                  ctx.fillStyle = "transparent";
+                  ctx.fillRect(0, 0, W, H);
+
+                  const pad = 18,
+                    pw = W - 2 * pad,
+                    ph = H - 2 * pad;
+                  const cx = pad + pw / 2,
+                    cy = pad + ph / 2;
+
+                  const nPts = 14;
+
+                  const pts3D = [];
+                  const pts2D = [];
+
+                  for (let i = 0; i < nPts; i++) {
+                    const idx = head - i * 4;
+
+                    const v1 = sampleRaw(type, idx);
+                    const v2 = sampleRaw(type, idx - tau);
+                    const v3 = sampleRaw(type, idx - 2 * tau);
+
+                    pts3D.push([v1, v2, v3]);
+
+                    const { px, py } = isoP(v1, v2, v3);
+                    pts2D.push([cx + px, cy + py]);
+                  }
+
+                  function dist3(a, b) {
+                    return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+                  }
+
+                  const maxD = Math.max(...pts3D.flatMap((a, i) => pts3D.slice(i + 1).map((b) => dist3(a, b))));
+
+                  const threshold = epsFrac * maxD;
+
+                  ctx.fillStyle = "rgba(0,255,202,0.15)";
+                  let nTri = 0;
+
+                  for (let i = 0; i < nPts; i++)
+                    for (let j = i + 1; j < nPts; j++)
+                      for (let k = j + 1; k < nPts; k++) {
+                        const dij = dist3(pts3D[i], pts3D[j]);
+                        const djk = dist3(pts3D[j], pts3D[k]);
+                        const dik = dist3(pts3D[i], pts3D[k]);
+
+                        if (dij <= threshold && djk <= threshold && dik <= threshold) {
+                          ctx.beginPath();
+                          ctx.moveTo(pts2D[i][0], pts2D[i][1]);
+                          ctx.lineTo(pts2D[j][0], pts2D[j][1]);
+                          ctx.lineTo(pts2D[k][0], pts2D[k][1]);
+                          ctx.closePath();
+                          ctx.fill();
+                          nTri++;
+                        }
+                      }
+
+                  ctx.strokeStyle = "#00ffca";
+                  ctx.lineWidth = 1;
+
+                  let nEdge = 0;
+
+                  for (let i = 0; i < nPts; i++)
+                    for (let j = i + 1; j < nPts; j++) {
+                      const d = dist3(pts3D[i], pts3D[j]);
+
+                      if (d <= threshold) {
+                        ctx.beginPath();
+                        ctx.moveTo(pts2D[i][0], pts2D[i][1]);
+                        ctx.lineTo(pts2D[j][0], pts2D[j][1]);
+                        ctx.stroke();
+                        nEdge++;
+                      }
+                    }
+
+                  ctx.strokeStyle = "rgba(0,255,202,0.2)";
+                  ctx.lineWidth = 0.5;
+
+                  pts2D.forEach(([x, y]) => {
+                    ctx.beginPath();
+                    ctx.arc(x, y, threshold * 40, 0, Math.PI * 2);
+                    ctx.stroke();
+                  });
+
+                  pts2D.forEach(([x, y], i) => {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = i === 0 ? "#ff2d55" : "#00ffca";
+                    ctx.fill();
+                  });
+
+                  const par = Array.from({ length: nPts }, (_, i) => i);
+
+                  function find(x) {
+                    return par[x] === x ? x : (par[x] = find(par[x]));
+                  }
+
+                  for (let i = 0; i < nPts; i++)
+                    for (let j = i + 1; j < nPts; j++) {
+                      const d = dist3(pts3D[i], pts3D[j]);
+                      if (d <= threshold) {
+                        const pi = find(i),
+                          pj = find(j);
+                        if (pi !== pj) par[pi] = pj;
+                      }
+                    }
+
+                  const comps = new Set(Array.from({ length: nPts }, (_, i) => find(i))).size;
+
+                  const h1 = Math.max(0, nEdge - nPts + comps - nTri);
+
+                  document.getElementById("h0").textContent = comps;
+                  document.getElementById("h1").textContent = h1;
+                  document.getElementById("ne").textContent = nEdge;
+                  document.getElementById("nt").textContent = nTri;
+                  document.getElementById("np").textContent = nPts;
+
+                  ctx.fillStyle = "#6b7280";
+                  ctx.font = "10px var(--font-sans,sans-serif)";
+                  ctx.textAlign = "left";
+                  ctx.fillText("ε = " + threshold.toFixed(2), pad + 2, H - pad + 11);
+                }
+
+                let activeStep = 0;
+                function highlightStep(n) {
+                  activeStep = n;
+                  for (let i = 0; i < 4; i++)
+                    document.getElementById("pill" + i).className = "pill" + (i === n ? " active" : "");
+                }
+                for (let i = 0; i < 4; i++) {
+                  document.getElementById("pill" + i).addEventListener("click", () => highlightStep(i));
+                }
+
+                document.getElementById("tau2").addEventListener("input", (e) => {
+                  document.getElementById("tauV").textContent = e.target.value;
+                  phTrailX.length = phTrailY.length = phTrailZ.length = 0;
+                });
+                document.getElementById("eps").addEventListener("input", (e) => {
+                  document.getElementById("epsV").textContent = (parseInt(e.target.value) / 100).toFixed(2);
+                });
+                document.getElementById("spd2").addEventListener("input", (e) => {
+                  document.getElementById("spdV").textContent = e.target.value + "×";
+                });
+                document.getElementById("sig2").addEventListener("change", () => {
+                  phTrailX.length = phTrailY.length = phTrailZ.length = 0;
+                });
+
+                function frame() {
+                  const { tau, eps, type, spd } = getP();
+                  for (let s = 0; s < spd; s++) {
+                    head++;
+                    const v1 = sampleRaw(type, head);
+                    const v2 = sampleRaw(type, head - tau);
+                    const v3 = sampleRaw(type, head - 2 * tau);
+                    phTrailX.push(v1);
+                    phTrailY.push(v2);
+                    phTrailZ.push(v3);
+                    if (phTrailX.length > TRAIL) {
+                      phTrailX.shift();
+                      phTrailY.shift();
+                      phTrailZ.shift();
+                    }
+                  }
+
+                  const W = (c) => cvs[c].width / dpr,
+                    H = (c) => cvs[c].height / dpr;
+                  drawSig(ctxs[0], W(0), H(0), type, tau);
+                  drawVec(ctxs[1], W(1), H(1), type, tau);
+                  drawPhase(ctxs[2], W(2), H(2));
+                  drawVR(ctxs[3], W(3), H(3), type, tau, eps);
+
+                  document.getElementById("epsV").textContent = eps.toFixed(2);
+                  requestAnimationFrame(frame);
+                }
+
+                window.addEventListener("resize", () => {
+                  resizeAll();
+                });
+                frame();
+              })();
+            </script>
+          </div>
+        </div>
+
+        <div class="section-card" id="sec-2-2">
+          <div class="section-num">Section 2.2</div>
+          <h2>Why Loops Predict Crashes</h2>
+          <p>
+            Because a topological loop is the <strong>geometric signature of a feedback loop</strong> — a system caught
+            in a self-reinforcing spiral. During <strong>stable market conditions</strong>, the Takens-embedded point
+            cloud forms smooth, consistent curves. The $H_1$ features (loops) have moderate, stable persistence.
+          </p>
+          <p>But as a <strong>crash approaches</strong>, something remarkable happens:</p>
+          <ul>
+            <li>Asset correlations spike — everything starts moving together</li>
+            <li>The underlying dynamical system loses its degrees of freedom</li>
+            <li>The point cloud's geometry undergoes a <strong>phase transition</strong></li>
+            <li>Loops rapidly form and collapse — their total persistence <em>spikes</em></li>
+          </ul>
+          <p>
+            This spike in the Risk Index precedes the actual price drop by <strong>several days</strong>. The topology
+            sees the structural fracture before the market reacts. This is the fundamental insight:
+            <span class="highlight">geometric collapse precedes price collapse</span>.
+          </p>
+          <p>The mathematics works. The final step is to package it into a tool that any analyst can use.</p>
+
+          <div class="image-slot has-image">
+            <svg
+              viewBox="0 0 800 400"
+              xmlns="http://www.w3.org/2000/svg"
+              style="width: 100%; height: auto; display: block"
+            >
+              <defs>
+                <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#0a0505" />
+                  <stop offset="100%" stop-color="#12060a" />
+                </linearGradient>
+                <filter id="glowStable" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter id="glowCrash" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="6" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <rect width="800" height="400" fill="url(#bg3)" />
+
+              <line
+                x1="400"
+                y1="0"
+                x2="400"
+                y2="400"
+                stroke="rgba(255,255,255,0.08)"
+                stroke-width="2"
+                stroke-dasharray="10 10"
+              />
+
+              <text
+                x="200"
+                y="40"
+                fill="#00ffca"
+                font-family="'Inter', sans-serif"
+                font-size="16"
+                font-weight="700"
+                text-anchor="middle"
+              >
+                Stable Market Topology
+              </text>
+              <text
+                x="600"
+                y="40"
+                fill="#ff2d55"
+                font-family="'Inter', sans-serif"
+                font-size="16"
+                font-weight="700"
+                text-anchor="middle"
+              >
+                Pre-Crash Collapse
+              </text>
+
+              <g transform="translate(200, 220)">
+                <path
+                  d="M 0 -110 C 70 -110, 130 -50, 130 0 C 130 50, 70 110, 0 110 C -70 110, -130 50, -130 0 C -130 -50, -70 -110, 0 -110"
+                  fill="none"
+                  stroke="rgba(0, 255, 202, 0.4)"
+                  stroke-width="2"
+                />
+                <path
+                  d="M 0 -70 C 40 -70, 80 -30, 80 0 C 80 30, 40 70, 0 70 C -40 70, -80 30, -80 0 C -80 -30, -40 -70, 0 -70"
+                  fill="none"
+                  stroke="rgba(0, 255, 202, 0.2)"
+                  stroke-width="2"
+                />
+
+                <line x1="0" y1="-110" x2="0" y2="-70" stroke="rgba(0,255,202,0.3)" />
+                <line x1="130" y1="0" x2="80" y2="0" stroke="rgba(0,255,202,0.3)" />
+                <line x1="0" y1="110" x2="0" y2="70" stroke="rgba(0,255,202,0.3)" />
+                <line x1="-130" y1="0" x2="-80" y2="0" stroke="rgba(0,255,202,0.3)" />
+
+                <circle cx="0" cy="-110" r="4" fill="#00ffca" filter="url(#glowStable)" />
+                <circle cx="92" cy="-92" r="4" fill="#00ffca" filter="url(#glowStable)" />
+                <circle cx="130" cy="0" r="4" fill="#00ffca" filter="url(#glowStable)" />
+                <circle cx="92" cy="92" r="4" fill="#00ffca" filter="url(#glowStable)" />
+                <circle cx="0" cy="110" r="4" fill="#00ffca" filter="url(#glowStable)" />
+                <circle cx="-92" cy="92" r="4" fill="#00ffca" filter="url(#glowStable)" />
+                <circle cx="-130" cy="0" r="4" fill="#00ffca" filter="url(#glowStable)" />
+                <circle cx="-92" cy="-92" r="4" fill="#00ffca" filter="url(#glowStable)" />
+              </g>
+
+              <g transform="translate(600, 220)">
+                <path
+                  d="M 0 -40 L 40 10 L -20 50 L -40 -10 L 30 -50 L 50 30 L -50 20 Z"
+                  fill="rgba(255, 45, 85, 0.1)"
+                  stroke="#ff2d55"
+                  stroke-width="2"
+                  filter="url(#glowCrash)"
+                />
+                <path
+                  d="M -10 -20 L 20 5 L -10 25 L -20 -5 Z"
+                  fill="none"
+                  stroke="#ffb830"
+                  stroke-width="1.5"
+                  opacity="0.8"
+                />
+
+                <line x1="0" y1="-40" x2="-50" y2="20" stroke="#ff2d55" stroke-width="1.5" stroke-dasharray="4 2" />
+                <line x1="40" y1="10" x2="-20" y2="50" stroke="#ff2d55" stroke-width="1.5" stroke-dasharray="4 2" />
+                <line x1="30" y1="-50" x2="50" y2="30" stroke="#ff2d55" stroke-width="1.5" />
+
+                <circle cx="0" cy="-40" r="5" fill="#ff2d55" filter="url(#glowCrash)" />
+                <circle cx="40" cy="10" r="6" fill="#ffb830" filter="url(#glowCrash)" />
+                <circle cx="-20" cy="50" r="5" fill="#ff2d55" filter="url(#glowCrash)" />
+                <circle cx="-40" cy="-10" r="7" fill="#ff2d55" filter="url(#glowCrash)" />
+                <circle cx="30" cy="-50" r="4" fill="#ffb830" filter="url(#glowCrash)" />
+                <circle cx="50" cy="30" r="5" fill="#ff2d55" filter="url(#glowCrash)" />
+                <circle cx="-50" cy="20" r="6" fill="#ff2d55" filter="url(#glowCrash)" />
+              </g>
+            </svg>
+          </div>
+          <p class="image-caption">
+            Fig 7. Left: healthy market topology with stable loops. Right: collapsing geometry before a crash event.
+          </p>
+        </div>
+
+        <div class="section-card amber-card" id="sec-2-3">
+          <div class="section-num">Section 2.3</div>
+          <h2>The Analyzer — A Real-World Implementation</h2>
+          <p>
+            We wrapped this entire pipeline — Takens embedding, Vietoris-Rips filtration, persistent homology, and the
+            $H_1$ risk signal — into a <strong>production-grade web application</strong>: the
+            <span class="amber-text">TDA Market Risk Analyzer</span>. Upload a CSV of any market's price history, and it
+            returns a complete topological risk profile.
+          </p>
+
+          <div class="feature-grid">
+            <div class="feature-item">
+              <div class="feature-item-title"><span class="dot"></span> OHLC Candlestick Chart</div>
+              <p>Interactive price visualization with TradingView Lightweight Charts.</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-item-title"><span class="dot"></span> Synchronized Risk Chart</div>
+              <p>TDA Risk Index with dynamic threshold — crosshair synced to the price chart.</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-item-title"><span class="dot"></span> TDA Engine Badge</div>
+              <p>Live display of the active backend: Giotto-TDA, Ripser, or Fallback.</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-item-title"><span class="dot"></span> Instability Detection</div>
+              <p>Automatic flagging of time periods where the topology exceeds the μ+2σ threshold.</p>
+            </div>
+          </div>
+
+          <div class="image-slot has-image">
+            <svg
+              viewBox="0 0 800 450"
+              xmlns="http://www.w3.org/2000/svg"
+              style="width: 100%; height: auto; display: block; border-radius: 12px"
+            >
+              <defs>
+                <linearGradient id="bg4" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#050608" />
+                  <stop offset="100%" stop-color="#0b1016" />
+                </linearGradient>
+              </defs>
+              <rect width="800" height="450" fill="url(#bg4)" />
+
+              <rect x="0" y="0" width="800" height="50" fill="rgba(255,255,255,0.03)" />
+              <path d="M0 50 L800 50" stroke="rgba(255,255,255,0.1)" />
+              <text x="20" y="32" fill="#00ffca" font-family="'Inter', sans-serif" font-size="16" font-weight="700">
+                TDA Market Risk Analyzer
+              </text>
+              <rect
+                x="680"
+                y="12"
+                width="100"
+                height="26"
+                fill="rgba(0, 255, 202, 0.1)"
+                stroke="rgba(0, 255, 202, 0.3)"
+                rx="13"
+              />
+              <text
+                x="730"
+                y="30"
+                fill="#00ffca"
+                font-family="'JetBrains Mono', monospace"
+                font-size="11"
+                text-anchor="middle"
+              >
+                Giotto-TDA
+              </text>
+
+              <rect
+                x="20"
+                y="70"
+                width="480"
+                height="360"
+                fill="rgba(8, 10, 14, 0.6)"
+                stroke="rgba(255,255,255,0.05)"
+                rx="8"
+              />
+              <text x="40" y="100" fill="#e0e4ec" font-family="'Inter', sans-serif" font-size="14" font-weight="600">
+                SPX500 Price
+              </text>
+
+              <g stroke-width="2" transform="translate(60, 150)">
+                <line x1="20" y1="0" x2="20" y2="80" stroke="#00ffca" />
+                <rect x="15" y="20" width="10" height="40" fill="#00ffca" />
+                <line x1="60" y1="-20" x2="60" y2="50" stroke="#00ffca" />
+                <rect x="55" y="-10" width="10" height="30" fill="#00ffca" />
+                <line x1="100" y1="-10" x2="100" y2="70" stroke="#ff2d55" />
+                <rect x="95" y="0" width="10" height="50" fill="#ff2d55" />
+                <line x1="140" y1="40" x2="140" y2="120" stroke="#ff2d55" />
+                <rect x="135" y="50" width="10" height="60" fill="#ff2d55" />
+                <line x1="180" y1="80" x2="180" y2="150" stroke="#ff2d55" />
+                <rect x="175" y="100" width="10" height="40" fill="#ff2d55" />
+                <line x1="220" y1="120" x2="220" y2="200" stroke="#ff2d55" />
+                <rect x="215" y="140" width="10" height="50" fill="#ff2d55" />
+                <line x1="260" y1="160" x2="260" y2="220" stroke="#00ffca" />
+                <rect x="255" y="160" width="10" height="30" fill="#00ffca" />
+                <line x1="300" y1="130" x2="300" y2="180" stroke="#00ffca" />
+                <rect x="295" y="130" width="10" height="40" fill="#00ffca" />
+              </g>
+
+              <rect
+                x="520"
+                y="70"
+                width="260"
+                height="140"
+                fill="rgba(8, 10, 14, 0.6)"
+                stroke="rgba(255,255,255,0.05)"
+                rx="8"
+              />
+              <text x="540" y="100" fill="#e0e4ec" font-family="'Inter', sans-serif" font-size="14" font-weight="600">
+                Topology Status
+              </text>
+              <text x="540" y="130" fill="#8892a4" font-family="'JetBrains Mono', monospace" font-size="12">
+                Threshold: 1.45
+              </text>
+              <text x="540" y="150" fill="#8892a4" font-family="'JetBrains Mono', monospace" font-size="12">
+                Current:
+              </text>
+              <text
+                x="610"
+                y="150"
+                fill="#ff2d55"
+                font-family="'JetBrains Mono', monospace"
+                font-size="12"
+                font-weight="700"
+              >
+                2.89
+              </text>
+
+              <rect
+                x="540"
+                y="170"
+                width="220"
+                height="24"
+                fill="rgba(255, 45, 85, 0.15)"
+                stroke="rgba(255, 45, 85, 0.3)"
+                rx="4"
+              />
+              <text
+                x="650"
+                y="187"
+                fill="#ff2d55"
+                font-family="'Inter', sans-serif"
+                font-size="12"
+                font-weight="700"
+                text-anchor="middle"
+              >
+                INSTABILITY DETECTED
+              </text>
+
+              <rect
+                x="520"
+                y="230"
+                width="260"
+                height="200"
+                fill="rgba(8, 10, 14, 0.6)"
+                stroke="rgba(255,255,255,0.05)"
+                rx="8"
+              />
+              <text x="540" y="260" fill="#e0e4ec" font-family="'Inter', sans-serif" font-size="14" font-weight="600">
+                Risk Index
+              </text>
+              <line x1="530" y1="330" x2="770" y2="330" stroke="#ff2d55" stroke-dasharray="4 4" stroke-width="1.5" />
+              <text
+                x="770"
+                y="325"
+                fill="#ff2d55"
+                font-family="'JetBrains Mono', monospace"
+                font-size="10"
+                text-anchor="end"
+              >
+                μ+2σ
+              </text>
+              <path
+                d="M 540 380 L 580 370 L 620 375 L 660 290 L 700 260 L 740 310 L 760 380"
+                fill="none"
+                stroke="#00ffca"
+                stroke-width="2"
+              />
+              <circle cx="700" cy="260" r="4" fill="#ff2d55" />
+              <circle cx="660" cy="290" r="4" fill="#ff2d55" />
+
+              <line
+                x1="240"
+                y1="120"
+                x2="240"
+                y2="430"
+                stroke="rgba(255,255,255,0.2)"
+                stroke-width="1"
+                stroke-dasharray="4 4"
+              />
+              <line
+                x1="700"
+                y1="260"
+                x2="700"
+                y2="430"
+                stroke="rgba(255,255,255,0.2)"
+                stroke-width="1"
+                stroke-dasharray="4 4"
+              />
+            </svg>
+          </div>
+          <p class="image-caption">
+            Fig 8. The TDA Market Risk Analyzer showing a crash detection event on real market data.
+          </p>
+
+          <p>
+            Whether applied to equities, forex, or <strong>crypto markets</strong> — the geometric signal is universal.
+            Unlike indicator-based systems that require parameter tuning per asset, the topological approach detects
+            structural instability <em>regardless of the market</em>.
+          </p>
+        </div>
+
+        <div class="disclaimer-card">
+          <h2>⚠ Operational Disclaimer</h2>
+          <p>
+            While Persistent Homology provides a mathematical edge in detecting structural instability, the Analyzer
+            <strong>does not guarantee risk prediction</strong>. Financial markets are subject to sudden, unpredictable
+            exogenous shocks. This tool is a <em>geometric early warning system</em> that supplements — but does not
+            replace — sound risk management practices.
+          </p>
+        </div>
+      </div>
+    </div>
+    <footer class="blog-footer">
+      <p>
+        Written by
+        <span class="highlight">MOHAMED ALI BENBELGHITH</span> © 2026
+      </p>
+      <p>
+        Check the code on
+        <span class="highlight">
+          <a href="https://github.com/MohamedAli1937/TDA-Market-Risk-Analyzer" target="_blank">
+            <i class="fa-brands fa-github"></i> GitHub
+          </a>
+        </span>
+      </p>
+    </footer>
+    <button class="back-to-top" id="backToTop" aria-label="Back to top">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </button>
+    <script src="scripts.js"></script>
+    <script>
+      (function () {
+        var toggle = document.getElementById("themeToggle");
+        if (!toggle) return;
+
+        function updateTheme() {
+          var current = document.documentElement.getAttribute("data-theme");
+          var next = current === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          localStorage.setItem("tda-blog-theme", next);
+        }
+
+        toggle.addEventListener("click", function () {
+          if (document.startViewTransition) {
+            document.documentElement.classList.add("no-transition");
+            document.startViewTransition(() => {
+              updateTheme();
+              document.documentElement.classList.remove("no-transition");
+            });
+          } else {
+            updateTheme();
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
