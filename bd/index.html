@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Lab – Mohamed Ali</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        :root {
+            --bg-dark: #0f1115;
+            --bg-card: #1a1d23;
+            --accent-primary: #52b788;
+            --accent-secondary: #2d6a4f;
+            --text-main: #e0e0e0;
+            --text-muted: #7a8395;
+            --border-color: #2a2e38;
+            --terminal-bg: #14161a;
+            --oracle-red: #e05c5c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: #15181e;
+            border-right: 1px solid var(--border-color);
+            padding: 30px 20px;
+            z-index: 1000;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .logo-box {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 14px;
+        }
+
+        .logo-text {
+            font-weight: 600;
+            font-size: 18px;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-list {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 8px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            text-decoration: none;
+            color: var(--text-muted);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(82, 183, 136, 0.1);
+            color: var(--accent-primary);
+        }
+
+        .nav-link i {
+            font-size: 16px;
+        }
+
+        /* --- Main Content --- */
+        .main-content {
+            margin-left: 260px;
+            padding: 40px 60px;
+            max-width: 1400px;
+        }
+
+        header {
+            margin-bottom: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header-title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #fff, var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        .badge-db {
+            background: rgba(82, 183, 136, 0.1);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* --- Section Styling --- */
+        .tp-section {
+            display: none;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .tp-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-intro {
+            margin-bottom: 30px;
+        }
+
+        .section-intro h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        /* --- Grid Layout --- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+            gap: 24px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* --- Query Card --- */
+        .query-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .query-card:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .card-header {
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .q-num {
+            background: var(--accent-primary);
+            color: #000;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .q-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .card-body {
+            padding: 0;
+        }
+
+        .sql-block {
+            background: #14161a;
+            padding: 18px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #a8b8d0;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .sql-block::before {
+            content: 'SQL';
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .keyword { color: #569cd6; font-weight: 600; }
+        .function { color: #dcdcaa; }
+        .string { color: #ce9178; }
+        .comment { color: #6a9955; font-style: italic; }
+
+        .result-block {
+            padding: 20px;
+        }
+
+        .result-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* --- Table Styling --- */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        th {
+            background: #252830;
+            text-align: left;
+            padding: 10px 15px;
+            color: var(--accent-primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 8px 15px;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .null-val { color: #5a6070; font-style: italic; }
+        .num-val { color: #b5cea8; }
+
+        /* --- Terminal / Log Styling --- */
+        .terminal {
+            background: var(--terminal-bg);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #d4d4d4;
+            border: 1px solid var(--border-color);
+            margin-top: 20px;
+        }
+
+        .term-line { margin-bottom: 4px; }
+        .term-success { color: var(--accent-primary); }
+        .term-info { color: #569cd6; }
+        .term-prompt { color: var(--text-muted); }
+
+        /* --- Oracle Specific --- */
+        .oracle-header .q-num {
+            background: var(--oracle-red);
+        }
+        .oracle-link:hover, .oracle-link.active {
+            background: rgba(224, 92, 92, 0.1);
+            color: var(--oracle-red);
+        }
+
+        /* --- Footer --- */
+        footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 1000px) {
+            .sidebar { width: 80px; padding: 20px 10px; }
+            .logo-text, .nav-text { display: none; }
+            .main-content { margin-left: 80px; padding: 30px; }
+            .card-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo-area">
+            <div class="logo-box">MA</div>
+            <div class="logo-text">SQL Lab</div>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" onclick="showTP(1, event)">
+                    <span class="nav-text">TP 1: Schema & Data</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showTP(2, event)">
+                    <span class="nav-text">TP 2: Queries & Logic</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link oracle-link" onclick="showTP(3, event)">
+                    <span class="nav-text">TP 3: Oracle Security</span>
+                </a>
+            </li>
+            <li class="nav-item" style="margin-top: 40px;">
+                <a href="#" class="nav-link" onclick="showTP('source', event)">
+                    <span class="nav-text">Full Source Code</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="main-content">
+        <header>
+            <div class="header-title">
+                <h1>Dashboard de Gestion de Base de Données</h1>
+                <p>Travaux Pratiques — Institut National des Sciences Appliquées et de Technologie</p>
+            </div>
+            <div class="badge-db">MySQL 8.0 & Oracle</div>
+        </header>
+
+        <!-- --- TP 1 SECTION --- -->
+        <section id="tp1" class="tp-section active">
+            <div class="section-intro">
+                <h2>TP 1 — Implémentation du Schéma Relationnel</h2>
+                <p>Création de la base <code>GestionSalles</code>, définition des tables avec contraintes d'intégrité et insertion des données initiales.</p>
+            </div>
+
+            <div class="card-grid">
+                <div class="query-card full-width">
+                    <div class="card-header">
+                        <div class="q-num">LOG</div>
+                        <div class="q-title">Journal d'exécution de la structure</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="terminal">
+                            <div class="term-line"><span class="term-prompt">></span> <span class="term-info">CREATE DATABASE</span> GestionSalles;</div>
+                            <div class="term-line"><span class="term-success">Query OK, 1 row affected</span></div>
+                            <div class="term-line"><span class="term-prompt">></span> <span class="term-info">USE</span> GestionSalles;</div>
+                            <div class="term-line"><span class="term-success">Database changed</span></div>
+                            <div class="term-line"><span class="term-prompt">></span> <span class="term-info">CREATE TABLE</span> departement, salle, enseignement, enseignant, Etudiant, reservation...;</div>
+                            <div class="term-line"><span class="term-success">Query OK, Schema created successfully.</span></div>
+                            <div class="term-line"><br></div>
+                            <div class="term-line"><span class="term-prompt">></span> <span class="term-info">INSERT INTO</span> data... (Bulk Insert)</div>
+                            <div class="term-line"><span class="term-success">All initial data inserted.</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Departement -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">TBL</div>
+                        <div class="q-title">Table : Departements</div>
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>ID</th><th>Nom</th></tr></thead>
+                                <tbody>
+                                    <tr><td>1</td><td>IRT</td></tr>
+                                    <tr><td>2</td><td>IGL</td></tr>
+                                    <tr><td>3</td><td>ILA</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Salle -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">TBL</div>
+                        <div class="q-title">Table : Salles</div>
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Bat</th><th>Numéro</th><th>Capacité</th></tr></thead>
+                                <tbody>
+                                    <tr><td>B</td><td>020</td><td class="num-val">15</td></tr>
+                                    <tr><td>B</td><td>022</td><td class="num-val">15</td></tr>
+                                    <tr><td>A</td><td>301</td><td class="num-val">45</td></tr>
+                                    <tr><td>C</td><td>Amphi 8</td><td class="num-val">500</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Enseignement -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">TBL</div>
+                        <div class="q-title">Table : Enseignements</div>
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>ID</th><th>Intitulé</th></tr></thead>
+                                <tbody>
+                                    <tr><td>1</td><td>Bases de Données Relationnelles</td></tr>
+                                    <tr><td>2</td><td>Langage C++</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Enseignant -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">TBL</div>
+                        <div class="q-title">Table : Enseignants</div>
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nom</th><th>Prenom</th><th>Grade</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ousteith</td><td>ouahed</td><td>MCF</td></tr>
+                                    <tr><td>ousteitha</td><td>wahida</td><td>PROF</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Etudiant -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">TBL</div>
+                        <div class="q-title">Table : Etudiants</div>
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nom</th><th>Prenom</th><th>Ville</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ben foulen</td><td>foulen</td><td>TUNIS</td></tr>
+                                    <tr><td>tounsi</td><td>ahmed</td><td>bardo</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Reservation -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">TBL</div>
+                        <div class="q-title">Table : Reservations</div>
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Salle</th><th>Enseignant</th><th>Date</th></tr></thead>
+                                <tbody>
+                                    <tr><td>B-022</td><td>ousteith</td><td>2008-10-15</td></tr>
+                                    <tr><td>B-022</td><td>ousteitha</td><td>2008-11-04</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View Email_Etudiant -->
+                <div class="query-card full-width">
+                    <div class="card-header">
+                        <div class="q-num">VIEW</div>
+                        <div class="q-title">Vue : Email_Etudiant</div>
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nom</th><th>Prenom</th><th>Email</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ben foulen</td><td>foulen</td><td>foulen@gmail.com</td></tr>
+                                    <tr><td>tounsi</td><td>ahmed</td><td>pat@yahoo.fr</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- --- TP 2 SECTION --- -->
+        <section id="tp2" class="tp-section">
+            <div class="section-intro">
+                <h2>TP 2 — Requêtes Avancées & Triggers</h2>
+                <p>Manipulation des données via des requêtes complexes, agrégations et automatisation par triggers.</p>
+            </div>
+
+            <div class="card-grid">
+                <!-- Q1 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q1</div>
+                        <div class="q-title">Noms et prénoms des étudiants</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nom</th><th>Prenom</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ben foulen</td><td>foulen</td></tr>
+                                    <tr><td>tounsi</td><td>ahmed</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q2</div>
+                        <div class="q-title">Étudiants habitant Tunis / Sfax</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant <span class="keyword">WHERE</span> Ville = <span class="string">'TUNIS'</span>; <br>
+                        <span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant <span class="keyword">WHERE</span> Ville = <span class="string">'Sfax'</span>;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nom</th><th>Prenom</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ben foulen</td><td>foulen</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q3</div>
+                        <div class="q-title">Noms commençant par 'T' ou 'F'</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant <span class="keyword">WHERE</span> Nom <span class="keyword">LIKE</span> <span class="string">'t%'</span>; <br>
+                        <span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant <span class="keyword">WHERE</span> Nom <span class="keyword">LIKE</span> <span class="string">'f%'</span>;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nom</th><th>Prenom</th></tr></thead>
+                                <tbody>
+                                    <tr><td>tounsi</td><td>ahmed</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q4</div>
+                        <div class="q-title">Avant-dernière lettre 'a' (Enseignants)</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Enseignant <span class="keyword">WHERE</span> Nom <span class="keyword">LIKE</span> <span class="string">'%a_'</span>;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nom</th><th>Prenom</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ousteitha</td><td>wahida</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q5 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q5</div>
+                        <div class="q-title">Enseignants classés par département</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> E.Nom, E.Prenom, D.nom_departement <br>
+                        <span class="keyword">FROM</span> Enseignant E <br>
+                        <span class="keyword">JOIN</span> departement D <span class="keyword">ON</span> E.departement_id = D.departement_id <br>
+                        <span class="keyword">ORDER BY</span> D.nom_departement, E.Nom;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nom</th><th>Prenom</th><th>Département</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ousteith</td><td>ouahed</td><td>IRT</td></tr>
+                                    <tr><td>ousteitha</td><td>wahida</td><td>IRT</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q6 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q6</div>
+                        <div class="q-title">Nombre d'enseignants (Moniteur)</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> <span class="function">COUNT</span>(*) <span class="keyword">AS</span> Nombre_Moniteurs <span class="keyword">FROM</span> Enseignant <span class="keyword">WHERE</span> grade = <span class="string">'Moniteur'</span>;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nombre_Moniteurs</th></tr></thead>
+                                <tbody>
+                                    <tr><td class="num-val">0</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q7 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q7</div>
+                        <div class="q-title">Étudiants sans Fax (NULL)</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant <span class="keyword">WHERE</span> Fax <span class="keyword">IS NULL</span>;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nom</th><th>Prenom</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ben foulen</td><td>foulen</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q8 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q8</div>
+                        <div class="q-title">Description contient 'SQL' ou 'Licence'</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> intitule <span class="keyword">FROM</span> Enseignement <br>
+                        <span class="keyword">WHERE</span> description <span class="keyword">LIKE</span> <span class="string">'%SQL%'</span> <span class="keyword">OR</span> description <span class="keyword">LIKE</span> <span class="string">'%Licence%'</span>;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Intitulé</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Bases de Données Relationnelles</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q9 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q9</div>
+                        <div class="q-title">Capacité moyenne et maximum des salles</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> <span class="function">AVG</span>(capacite), <span class="function">MAX</span>(capacite) <span class="keyword">FROM</span> salle;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Capacité Moyenne</th><th>Capacité Max</th></tr></thead>
+                                <tbody>
+                                    <tr><td class="num-val">143.75</td><td class="num-val">500</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q10 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q10</div>
+                        <div class="q-title">Salles : Capacité &lt; Moyenne</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> batiment, numero_salle, capacite <br>
+                        <span class="keyword">FROM</span> salle <span class="keyword">WHERE</span> capacite &lt; (<span class="keyword">SELECT</span> <span class="function">AVG</span>(capacite) <span class="keyword">FROM</span> salle);
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Batiment</th><th>Numéro</th><th>Capacité</th></tr></thead>
+                                <tbody>
+                                    <tr><td>B</td><td>020</td><td class="num-val">15</td></tr>
+                                    <tr><td>B</td><td>022</td><td class="num-val">15</td></tr>
+                                    <tr><td>A</td><td>301</td><td class="num-val">45</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q11 -->
+                <div class="query-card">
+                    <div class="card-header">
+                        <div class="q-num">Q11</div>
+                        <div class="q-title">Classement des étudiants par ville</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> Etudiant <span class="keyword">ORDER BY</span> Ville;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Nom</th><th>Prenom</th><th>Ville</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ben foulen</td><td>foulen</td><td>TUNIS</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trigger -->
+                <div class="query-card full-width">
+                    <div class="card-header" style="border-left: 4px solid var(--accent-primary);">
+                        <div class="q-num">TRG</div>
+                        <div class="q-title">Trigger : Inscription Automatique</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">CREATE TRIGGER</span> Verif_Inscription_Note <br>
+                        <span class="keyword">BEFORE INSERT ON</span> Note <span class="keyword">FOR EACH ROW</span> <br>
+                        <span class="keyword">BEGIN</span> <br>
+                        &nbsp;&nbsp;<span class="keyword">IF NOT EXISTS</span> (<span class="keyword">SELECT</span> 1 <span class="keyword">FROM</span> Inscription ...) <span class="keyword">THEN</span> <br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">INSERT INTO</span> Inscription ... <br>
+                        &nbsp;&nbsp;<span class="keyword">END IF</span>; <br>
+                        <span class="keyword">END</span>;
+                    </div>
+                    <div class="result-block">
+                        <div class="terminal">
+                            <div class="term-line"><span class="term-prompt">></span> <span class="term-info">INSERT INTO</span> Note (Etudiant_ID, ...) VALUES (1, ...);</div>
+                            <div class="term-line"><span class="term-success">Query OK, 1 row affected</span></div>
+                            <div class="term-line"><span class="term-prompt">></span> <span class="term-info">SELECT</span> * <span class="keyword">FROM</span> Inscription;</div>
+                            <div class="term-line">1 row found. <span class="term-success">(L'étudiant a été inscrit automatiquement par le trigger)</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- --- TP 3 SECTION --- -->
+        <section id="tp3" class="tp-section">
+            <div class="section-intro">
+                <h2 style="color: var(--oracle-red);">TP 3 — Administration & Sécurité (Oracle)</h2>
+                <p>Gestion des utilisateurs, profils de sécurité, privilèges et rôles sous Oracle Database.</p>
+            </div>
+
+            <div class="card-grid">
+                <div class="query-card oracle-header">
+                    <div class="card-header">
+                        <div class="q-num">Q1</div>
+                        <div class="q-title">Création des Utilisateurs</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">CREATE USER</span> medali_u1 <span class="keyword">IDENTIFIED BY</span> pass123; <br>
+                        <span class="keyword">GRANT ALL PRIVILEGES TO</span> medali_u1;
+                    </div>
+                    <div class="result-block">
+                        <div class="terminal">
+                            <div class="term-line">User created.</div>
+                            <div class="term-line">Grant succeeded.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="query-card oracle-header">
+                    <div class="card-header">
+                        <div class="q-num">Q2</div>
+                        <div class="q-title">Connexion Session u2</div>
+                    </div>
+                    <div class="result-block">
+                        <div class="terminal">
+                            <div class="term-line"><span class="term-prompt">SQL></span> <span class="term-info">CONNECT</span> medali_u2/pass456;</div>
+                            <div class="term-line">Connected.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="query-card oracle-header">
+                    <div class="card-header">
+                        <div class="q-num">Q3</div>
+                        <div class="q-title">Création des Tables (t1, t2)</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">CREATE TABLE</span> t1 (id <span class="keyword">NUMBER PRIMARY KEY</span>, description <span class="keyword">VARCHAR2</span>(50)); <br>
+                        <span class="keyword">CREATE TABLE</span> t2 (id <span class="keyword">NUMBER PRIMARY KEY</span>, info <span class="keyword">VARCHAR2</span>(50));
+                    </div>
+                    <div class="result-block">
+                        <div class="terminal">
+                            <div class="term-line">Table created.</div>
+                            <div class="term-line">Table created.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div class="query-card oracle-header">
+                    <div class="card-header">
+                        <div class="q-num">Q4</div>
+                        <div class="q-title">Attribution des Droits (GRANT)</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">GRANT SELECT ON</span> t1 <span class="keyword">TO</span> medali_u1, medali_u3; <br>
+                        <span class="keyword">GRANT SELECT ON</span> t2 <span class="keyword">TO</span> medali_u1, medali_u3;
+                    </div>
+                    <div class="result-block">
+                        <div class="terminal">
+                            <div class="term-line">Grant succeeded.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q5 -->
+                <div class="query-card oracle-header">
+                    <div class="card-header">
+                        <div class="q-num">Q5</div>
+                        <div class="q-title">Accès Inter-Utilisateurs (u1 -> u2)</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> medali_u2.t1;
+                    </div>
+                    <div class="result-block">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>ID</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td>1</td><td>Data for TP3 Table 1</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q6 -->
+                <div class="query-card oracle-header">
+                    <div class="card-header">
+                        <div class="q-num">Q6</div>
+                        <div class="q-title">Révocation des Droits (REVOKE)</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">REVOKE SELECT ON</span> t1 <span class="keyword">FROM</span> medali_u1, medali_u3; <br>
+                        <span class="keyword">REVOKE SELECT ON</span> t2 <span class="keyword">FROM</span> medali_u1, medali_u3;
+                    </div>
+                    <div class="result-block">
+                        <div class="terminal">
+                            <div class="term-line">Revoke succeeded.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q7 -->
+                <div class="query-card oracle-header">
+                    <div class="card-header">
+                        <div class="q-num">Q7</div>
+                        <div class="q-title">Droit de Transmission (GRANT OPTION)</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">GRANT SELECT ON</span> t1 <span class="keyword">TO</span> medali_u3 <span class="keyword">WITH GRANT OPTION</span>;
+                    </div>
+                    <div class="result-block">
+                        <div class="terminal">
+                            <div class="term-line">Grant succeeded.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="query-card oracle-header">
+                    <div class="card-header">
+                        <div class="q-num">Q8</div>
+                        <div class="q-title">Profil de Sécurité</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">CREATE PROFILE</span> mon_profil <span class="keyword">LIMIT</span> <br>
+                        FAILED_LOGIN_ATTEMPTS 3 <br>
+                        PASSWORD_LIFE_TIME 30;
+                    </div>
+                    <div class="result-block">
+                        <div class="terminal">
+                            <div class="term-line">Profile created.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q9 -->
+                <div class="query-card oracle-header">
+                    <div class="card-header">
+                        <div class="q-num">Q9</div>
+                        <div class="q-title">Suppression d'un Utilisateur</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">DROP USER</span> medali_u0 <span class="keyword">CASCADE</span>;
+                    </div>
+                    <div class="result-block">
+                        <div class="terminal">
+                            <div class="term-line">User dropped.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="query-card oracle-header full-width">
+                    <div class="card-header">
+                        <div class="q-num">Q10-13</div>
+                        <div class="q-title">Gestion Avancée des Rôles & u0</div>
+                    </div>
+                    <div class="sql-block">
+                        <span class="keyword">CREATE ROLE</span> r1; <br>
+                        <span class="comment">-- Q11: Attribution au rôle</span> <br>
+                        <span class="keyword">GRANT SELECT, INSERT, UPDATE ON</span> t1 <span class="keyword">TO</span> r1; <br>
+                        <span class="comment">-- Q12: Affectation du rôle à u1</span> <br>
+                        <span class="keyword">GRANT</span> r1 <span class="keyword">TO</span> medali_u1; <br>
+                        <span class="comment">-- Q13: Récréation de u0</span> <br>
+                        <span class="keyword">CREATE USER</span> medali_u0 <span class="keyword">IDENTIFIED BY</span> pass0;
+                    </div>
+                    <div class="result-block">
+                        <div class="terminal">
+                            <div class="term-line">Role created.</div>
+                            <div class="term-line">Grant succeeded.</div>
+                            <div class="term-line">Grant succeeded.</div>
+                            <div class="term-line">User created.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- --- SOURCE SECTION --- -->
+        <section id="source" class="tp-section">
+            <div class="section-intro">
+                <h2>Codes Sources Complets</h2>
+                <p>Retrouvez ici l'intégralité des scripts SQL pour chaque TP.</p>
+            </div>
+
+            <div class="query-card full-width" style="margin-bottom: 30px;">
+                <div class="card-header"><div class="q-title">Script TP 1 — tp1.sql</div></div>
+                <div class="sql-block" style="max-height: 500px; overflow-y: auto; white-space: pre;">
+<span class="comment">-- ==========================================
+-- TP-1: MySQL Database Implementation
+-- ==========================================</span>
+
+<span class="keyword">CREATE DATABASE IF NOT EXISTS</span> GestionSalles;
+<span class="keyword">USE</span> GestionSalles;
+
+<span class="comment">-- 1. Create Departement Table</span>
+<span class="keyword">CREATE TABLE</span> departement (
+    departement_id <span class="keyword">INTEGER PRIMARY KEY</span>,
+    nom_departement <span class="keyword">VARCHAR</span>(25) <span class="keyword">UNIQUE NOT NULL</span>
+);
+
+<span class="comment">-- 2. Create Salle Table</span>
+<span class="keyword">CREATE TABLE</span> salle (
+    batiment <span class="keyword">VARCHAR</span>(1),
+    numero_salle <span class="keyword">VARCHAR</span>(10),
+    capacite <span class="keyword">INTEGER CHECK</span> (capacite > 10),
+    <span class="keyword">PRIMARY KEY</span> (batiment, numero_salle)
+);
+
+<span class="comment">-- 3. Create Enseignement Table</span>
+<span class="keyword">CREATE TABLE</span> enseignement (
+    enseignement_id <span class="keyword">INTEGER</span>,
+    departement_id <span class="keyword">INTEGER</span>,
+    intitule <span class="keyword">VARCHAR</span>(60),
+    description <span class="keyword">VARCHAR</span>(1000),
+    <span class="keyword">PRIMARY KEY</span> (enseignement_id, departement_id),
+    <span class="keyword">FOREIGN KEY</span> (departement_id) <span class="keyword">REFERENCES</span> departement(departement_id)
+);
+
+<span class="comment">-- 4. Create Enseignant Table</span>
+<span class="keyword">CREATE TABLE</span> enseignant (
+    enseignant_id <span class="keyword">INTEGER PRIMARY KEY</span>,
+    departement_id <span class="keyword">INTEGER</span>,
+    nom <span class="keyword">VARCHAR</span>(25),
+    prenom <span class="keyword">VARCHAR</span>(25),
+    grade <span class="keyword">VARCHAR</span>(25) <span class="keyword">CHECK</span> (grade <span class="keyword">IN</span> (<span class="string">'Vacataire'</span>, <span class="string">'Moniteur'</span>, <span class="string">'ATER'</span>, <span class="string">'MCF'</span>, <span class="string">'PROF'</span>)),
+    telephone <span class="keyword">VARCHAR</span>(10),
+    fax <span class="keyword">VARCHAR</span>(10),
+    email <span class="keyword">VARCHAR</span>(100),
+    <span class="keyword">FOREIGN KEY</span> (departement_id) <span class="keyword">REFERENCES</span> departement(departement_id)
+);
+
+<span class="comment">-- 5. Create Etudiant Table</span>
+<span class="keyword">CREATE TABLE</span> Etudiant (
+    Etudiant_ID <span class="keyword">INTEGER PRIMARY KEY</span>,
+    Nom <span class="keyword">VARCHAR</span>(25) <span class="keyword">NOT NULL</span>,
+    Prenom <span class="keyword">VARCHAR</span>(25) <span class="keyword">NOT NULL</span>,
+    Date_Naissance <span class="keyword">DATE NOT NULL</span>,
+    Adresse <span class="keyword">VARCHAR</span>(50) <span class="keyword">DEFAULT NULL</span>,
+    Ville <span class="keyword">VARCHAR</span>(25) <span class="keyword">DEFAULT NULL</span>,
+    Code_Postal <span class="keyword">VARCHAR</span>(9) <span class="keyword">DEFAULT NULL</span>,
+    Telephone <span class="keyword">VARCHAR</span>(10) <span class="keyword">DEFAULT NULL</span>,
+    Fax <span class="keyword">VARCHAR</span>(10) <span class="keyword">DEFAULT NULL</span>,
+    Email <span class="keyword">VARCHAR</span>(100) <span class="keyword">DEFAULT NULL</span>
+);
+
+<span class="comment">-- 6. Create Reservation Table</span>
+<span class="keyword">CREATE TABLE</span> reservation (
+    reservation_id <span class="keyword">INTEGER PRIMARY KEY</span>,
+    batiment <span class="keyword">VARCHAR</span>(1) <span class="keyword">NOT NULL</span>,
+    numero_salle <span class="keyword">VARCHAR</span>(10) <span class="keyword">NOT NULL</span>,
+    enseignement_id <span class="keyword">INTEGER NOT NULL</span>,
+    departement_id <span class="keyword">INTEGER NOT NULL</span>,
+    enseignant_id <span class="keyword">INTEGER NOT NULL</span>,
+    date_resa <span class="keyword">DATE NOT NULL DEFAULT</span> (<span class="function">CURRENT_DATE</span>),
+    heure_debut <span class="keyword">TIME NOT NULL DEFAULT</span> (<span class="function">CURRENT_TIME</span>),
+    heure_fin <span class="keyword">TIME NOT NULL DEFAULT</span> <span class="string">'23:00:00'</span>,
+    nombre_heures <span class="keyword">INTEGER NOT NULL CHECK</span> (nombre_heures >= 1),
+    
+    <span class="keyword">CONSTRAINT</span> FK_Reservation_Salle <span class="keyword">FOREIGN KEY</span> (batiment, numero_salle) 
+        <span class="keyword">REFERENCES</span> salle(batiment, numero_salle) <span class="keyword">ON UPDATE RESTRICT ON DELETE RESTRICT</span>,
+    <span class="keyword">CONSTRAINT</span> FK_Reservation_Enseignement <span class="keyword">FOREIGN KEY</span> (enseignement_id, departement_id) 
+        <span class="keyword">REFERENCES</span> enseignement(enseignement_id, departement_id) <span class="keyword">ON UPDATE RESTRICT ON DELETE RESTRICT</span>,
+    <span class="keyword">CONSTRAINT</span> FK_Reservation_Enseignant <span class="keyword">FOREIGN KEY</span> (enseignant_id) 
+        <span class="keyword">REFERENCES</span> enseignant(enseignant_id) <span class="keyword">ON UPDATE RESTRICT ON DELETE RESTRICT</span>,
+    <span class="keyword">CONSTRAINT</span> CK_Reservation_HeureDebFin <span class="keyword">CHECK</span> (heure_debut &lt; heure_fin)
+);
+
+<span class="comment">-- 7. Create View</span>
+<span class="keyword">CREATE OR REPLACE VIEW</span> Email_Etudiant <span class="keyword">AS</span> 
+<span class="keyword">SELECT</span> Nom, Prenom, Email <span class="keyword">FROM</span> Etudiant;
+
+<span class="comment">-- INSERTIONS</span>
+<span class="keyword">INSERT INTO</span> departement <span class="keyword">VALUES</span> (1, <span class="string">'IRT'</span>), (2, <span class="string">'IGL'</span>), (3, <span class="string">'ILA'</span>);
+<span class="keyword">INSERT INTO</span> salle <span class="keyword">VALUES</span> (<span class="string">'B'</span>, <span class="string">'020'</span>, 15), (<span class="string">'B'</span>, <span class="string">'022'</span>, 15), (<span class="string">'A'</span>, <span class="string">'301'</span>, 45), (<span class="string">'C'</span>, <span class="string">'Amphi 8'</span>, 500);
+<span class="keyword">INSERT INTO</span> enseignant <span class="keyword">VALUES</span> (1, 1, <span class="string">'ousteith'</span>, <span class="string">'ouahed'</span>, <span class="string">'MCF'</span>, <span class="string">'4185'</span>, <span class="string">'4091'</span>, <span class="string">'ousteith@gmail.com'</span>);
+<span class="keyword">INSERT INTO</span> Etudiant <span class="keyword">VALUES</span> (1, <span class="string">'ben foulen'</span>, <span class="string">'foulen'</span>, <span class="string">'1979-02-18'</span>, <span class="string">'50, Rue des alouettes'</span>, <span class="string">'TUNIS'</span>, <span class="string">'75021'</span>, <span class="string">'0143567890'</span>, <span class="keyword">NULL</span>, <span class="string">'foulen@gmail.com'</span>);
+<span class="keyword">INSERT INTO</span> enseignement <span class="keyword">VALUES</span> (1, 1, <span class="string">'Bases de Données Relationnelles'</span>, <span class="string">'Modélisation E/A et SQL'</span>);
+<span class="keyword">INSERT INTO</span> reservation <span class="keyword">VALUES</span> (1, <span class="string">'B'</span>, <span class="string">'022'</span>, 1, 1, 1, <span class="string">'2008-10-15'</span>, <span class="string">'08:30:00'</span>, <span class="string">'11:45:00'</span>, 3);
+</div>
+            </div>
+
+            <div class="query-card full-width" style="margin-bottom: 30px;">
+                <div class="card-header"><div class="q-title">Script TP 2 — tp2.sql</div></div>
+                <div class="sql-block" style="max-height: 500px; overflow-y: auto; white-space: pre;">
+<span class="keyword">USE</span> GestionSalles;
+
+<span class="comment">-- 1. Liste des noms et des prénoms des étudiants</span>
+<span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant;
+
+<span class="comment">-- 2. Étudiants habitant Tunis, puis Sfax</span>
+<span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant <span class="keyword">WHERE</span> Ville = <span class="string">'TUNIS'</span>;
+<span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant <span class="keyword">WHERE</span> Ville = <span class="string">'Sfax'</span>;
+
+<span class="comment">-- 3. Étudiants dont le nom commence par 't', puis par 'f'</span>
+<span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant <span class="keyword">WHERE</span> Nom <span class="keyword">LIKE</span> <span class="string">'t%'</span>;
+<span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant <span class="keyword">WHERE</span> Nom <span class="keyword">LIKE</span> <span class="string">'f%'</span>;
+
+<span class="comment">-- 4. Enseignants dont l'avant-dernière lettre du nom est 'a'</span>
+<span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Enseignant <span class="keyword">WHERE</span> Nom <span class="keyword">LIKE</span> <span class="string">'%a_'</span>;
+
+<span class="comment">-- 5. Enseignants classés par département, nom et prénom</span>
+<span class="keyword">SELECT</span> E.Nom, E.Prenom, D.nom_departement 
+<span class="keyword">FROM</span> Enseignant E 
+<span class="keyword">JOIN</span> departement D <span class="keyword">ON</span> E.departement_id = D.departement_id
+<span class="keyword">ORDER BY</span> D.nom_departement <span class="keyword">ASC</span>, E.Nom <span class="keyword">ASC</span>, E.Prenom <span class="keyword">ASC</span>;
+
+<span class="comment">-- 6. Nombre d'enseignants dont le grade est 'Moniteur'</span>
+<span class="keyword">SELECT</span> <span class="function">COUNT</span>(*) <span class="keyword">AS</span> Nombre_Moniteurs <span class="keyword">FROM</span> Enseignant <span class="keyword">WHERE</span> grade = <span class="string">'Moniteur'</span>;
+
+<span class="comment">-- 7. Étudiants n'ayant pas de Fax (valeur NULL)</span>
+<span class="keyword">SELECT</span> Nom, Prenom <span class="keyword">FROM</span> Etudiant <span class="keyword">WHERE</span> Fax <span class="keyword">IS NULL</span>;
+
+<span class="comment">-- 8. Enseignements dont la description contient 'SQL' ou 'Licence'</span>
+<span class="keyword">SELECT</span> intitule <span class="keyword">FROM</span> Enseignement 
+<span class="keyword">WHERE</span> description <span class="keyword">LIKE</span> <span class="string">'%SQL%'</span> <span class="keyword">OR</span> description <span class="keyword">LIKE</span> <span class="string">'%Licence%'</span>;
+
+<span class="comment">-- 9. Capacité moyenne et maximum des salles</span>
+<span class="keyword">SELECT</span> <span class="function">AVG</span>(capacite) <span class="keyword">AS</span> Capacite_Moyenne, <span class="function">MAX</span>(capacite) <span class="keyword">AS</span> Capacite_Max <span class="keyword">FROM</span> salle;
+
+<span class="comment">-- 10. Salles dont la capacité est inférieure à la moyenne</span>
+<span class="keyword">SELECT</span> batiment, numero_salle, capacite 
+<span class="keyword">FROM</span> salle 
+<span class="keyword">WHERE</span> capacite &lt; (<span class="keyword">SELECT</span> <span class="function">AVG</span>(capacite) <span class="keyword">FROM</span> salle);
+
+<span class="comment">-- 11. Classer les étudiants par ville</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> Etudiant <span class="keyword">ORDER BY</span> Ville;
+
+<span class="comment">-- DDL Inscription &amp; Note</span>
+<span class="keyword">CREATE TABLE IF NOT EXISTS</span> Inscription (
+    Etudiant_ID <span class="keyword">INTEGER</span>,
+    enseignement_id <span class="keyword">INTEGER</span>,
+    departement_id <span class="keyword">INTEGER</span>,
+    <span class="keyword">PRIMARY KEY</span> (Etudiant_ID, enseignement_id, departement_id),
+    <span class="keyword">FOREIGN KEY</span> (Etudiant_ID) <span class="keyword">REFERENCES</span> Etudiant(Etudiant_ID),
+    <span class="keyword">FOREIGN KEY</span> (enseignement_id, departement_id) <span class="keyword">REFERENCES</span> enseignement(enseignement_id, departement_id)
+);
+
+<span class="keyword">CREATE TABLE IF NOT EXISTS</span> Note (
+    Note_ID <span class="keyword">INTEGER PRIMARY KEY AUTO_INCREMENT</span>,
+    Etudiant_ID <span class="keyword">INTEGER</span>,
+    enseignement_id <span class="keyword">INTEGER</span>,
+    departement_id <span class="keyword">INTEGER</span>,
+    valeur_note <span class="keyword">DECIMAL</span>(4,2) <span class="keyword">CHECK</span> (valeur_note <span class="keyword">BETWEEN</span> 0 <span class="keyword">AND</span> 20),
+    <span class="keyword">CONSTRAINT</span> FK_Note_Inscription <span class="keyword">FOREIGN KEY</span> (Etudiant_ID, enseignement_id, departement_id) 
+        <span class="keyword">REFERENCES</span> Inscription(Etudiant_ID, enseignement_id, departement_id)
+);
+
+<span class="comment">-- Trigger</span>
+<span class="keyword">DELIMITER</span> //
+<span class="keyword">CREATE TRIGGER</span> Verif_Inscription_Note <span class="keyword">BEFORE INSERT ON</span> Note <span class="keyword">FOR EACH ROW</span>
+<span class="keyword">BEGIN</span>
+    <span class="keyword">IF NOT EXISTS</span> (<span class="keyword">SELECT</span> 1 <span class="keyword">FROM</span> Inscription <span class="keyword">WHERE</span> Etudiant_ID = NEW.Etudiant_ID ...) <span class="keyword">THEN</span>
+        <span class="keyword">INSERT INTO</span> Inscription <span class="keyword">VALUES</span> (NEW.Etudiant_ID, NEW.enseignement_id, NEW.departement_id);
+    <span class="keyword">END IF</span>;
+<span class="keyword">END</span>; //
+<span class="keyword">DELIMITER</span> ;
+</div>
+            </div>
+
+            <div class="query-card full-width">
+                <div class="card-header" style="border-left: 4px solid var(--oracle-red);"><div class="q-title">Script TP 3 — tp3.sql (Oracle)</div></div>
+                <div class="sql-block" style="max-height: 500px; overflow-y: auto; white-space: pre;">
+<span class="comment">-- Q1: Creating the three users</span>
+<span class="keyword">CREATE USER</span> medali_u1 <span class="keyword">IDENTIFIED BY</span> pass123;
+<span class="keyword">GRANT ALL PRIVILEGES TO</span> medali_u1;
+
+<span class="keyword">CREATE USER</span> medali_u2 <span class="keyword">IDENTIFIED BY</span> pass456;
+<span class="keyword">GRANT CONNECT, RESOURCE TO</span> medali_u2;
+
+<span class="keyword">CREATE USER</span> medali_u3 <span class="keyword">IDENTIFIED BY</span> pass789;
+<span class="keyword">GRANT CONNECT, RESOURCE TO</span> medali_u3;
+
+<span class="comment">-- Q8: Security Profile creation</span>
+<span class="keyword">CREATE PROFILE</span> mon_profil <span class="keyword">LIMIT</span>
+    FAILED_LOGIN_ATTEMPTS 3
+    PASSWORD_LIFE_TIME 30;
+
+<span class="keyword">CREATE USER</span> medali_u0 <span class="keyword">IDENTIFIED BY</span> pass0 <span class="keyword">PROFILE</span> mon_profil;
+
+<span class="comment">-- Q9: Delete user</span>
+<span class="keyword">DROP USER</span> medali_u0 <span class="keyword">CASCADE</span>;
+
+<span class="comment">-- Q3: Create tables</span>
+<span class="keyword">CREATE TABLE</span> t1 (id <span class="keyword">NUMBER PRIMARY KEY</span>, description <span class="keyword">VARCHAR2</span>(50));
+<span class="keyword">CREATE TABLE</span> t2 (id <span class="keyword">NUMBER PRIMARY KEY</span>, info <span class="keyword">VARCHAR2</span>(50));
+
+<span class="comment">-- Q4: Rights</span>
+<span class="keyword">GRANT SELECT ON</span> t1 <span class="keyword">TO</span> medali_u1, medali_u3;
+<span class="keyword">GRANT SELECT ON</span> t2 <span class="keyword">TO</span> medali_u1, medali_u3;
+
+<span class="comment">-- Q6: Revoke</span>
+<span class="keyword">REVOKE SELECT ON</span> t1 <span class="keyword">FROM</span> medali_u1, medali_u3;
+
+<span class="comment">-- Q10: Role</span>
+<span class="keyword">CREATE ROLE</span> r1;
+<span class="keyword">GRANT SELECT, INSERT, UPDATE ON</span> t1 <span class="keyword">TO</span> r1;
+<span class="keyword">GRANT</span> r1 <span class="keyword">TO</span> medali_u1;
+</div>
+            </div>
+        </section>
+
+        <footer>
+            Mohamed Ali BENBELGHITH &copy; 2026 — TP Bases de Données (GL2)
+        </footer>
+    </div>
+
+    <script>
+        function showTP(num, event) {
+            if (event) event.preventDefault();
+            
+            // Update nav links
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            if (event) event.currentTarget.classList.add('active');
+
+            // Show section
+            document.querySelectorAll('.tp-section').forEach(sec => sec.classList.remove('active'));
+            if (num === 'source') {
+                document.getElementById('source').classList.add('active');
+            } else {
+                document.getElementById('tp' + num).classList.add('active');
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
