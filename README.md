@@ -4,6 +4,8 @@ Welcome to my personal portfolio! This is an immersive, cinematic web experience
 
 ### 🔗 [Click here to see the Live Website](https://mohamedali1937.github.io/)
 
+> **Note**: Find the secret in this site (not all of this is random) 🌌
+
 ---
 
 ![Thumbnail](./thumbnail.png)
