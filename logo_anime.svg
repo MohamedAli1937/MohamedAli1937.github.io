@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <title>M.A Tech &amp; Math - Animated Build</title>
+  <defs>
+    <style>
+      .core { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform-origin: 50px 50px; opacity: 0; }
+      .core-inner { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s forwards; transform-origin: 50px 50px; opacity: 0; }
+
+      .ring-out { animation: drawRing 1.5s ease-in-out 0.5s forwards; stroke-dasharray: 190; stroke-dashoffset: 190; }
+      .ring-in { animation: drawRing 1.5s ease-in-out 0.7s forwards; stroke-dasharray: 155; stroke-dashoffset: 155; }
+      .ring-mid { animation: fadeInSpin 2s ease-out 1.8s forwards; transform-origin: 50px 50px; opacity: 0; stroke-dasharray: 6 2; }
+
+      .petal {
+        stroke: #c9a227;
+        fill: #c9a227;
+        fill-opacity: 0;
+        stroke-dasharray: 120;
+        stroke-dashoffset: 120;
+        animation: 
+          drawPetal 1.5s ease-in-out 1.2s forwards,
+          fillPetal 1s ease-in-out 2.8s forwards;
+      }
+
+      .node { animation: popNode 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; }
+      .n1 { transform-origin: 23px 38px; animation-delay: 2.2s; }
+      .n2 { transform-origin: 77px 62px; animation-delay: 2.4s; }
+      .n3 { transform-origin: 63px 23px; animation-delay: 2.6s; }
+      .n4 { transform-origin: 37px 77px; animation-delay: 2.8s; }
+
+      @keyframes popIn {
+        0% { opacity: 0; transform: scale(0); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+      @keyframes drawRing {
+        to { stroke-dashoffset: 0; }
+      }
+      @keyframes fadeInSpin {
+        0% { opacity: 0; transform: rotate(-90deg) scale(0.9); }
+        100% { opacity: 0.75; transform: rotate(0deg) scale(1); }
+      }
+      @keyframes drawPetal {
+        to { stroke-dashoffset: 0; }
+      }
+      @keyframes fillPetal {
+        to { fill-opacity: 1; stroke: #0f121c; }
+      }
+      @keyframes popNode {
+        0% { opacity: 0; transform: scale(0); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+    </style>
+  </defs>
+
+
+  <circle class="ring-out" cx="50" cy="50" r="30" fill="none" stroke="#c9a227" stroke-width="1.5" opacity="0.9"/>
+  <circle class="ring-mid" cx="50" cy="50" r="27" fill="none" stroke="#c9a227" stroke-width="1"/>
+  <circle class="ring-in" cx="50" cy="50" r="24" fill="none" stroke="#c9a227" stroke-width="0.8" opacity="0.5"/>
+
+  <g fill="#c9a227">
+    <g class="node n1"><circle cx="23" cy="38" r="1.5"/></g>
+    <g class="node n2"><circle cx="77" cy="62" r="1.5"/></g>
+    <g class="node n3"><circle cx="63" cy="23" r="1" opacity="0.8"/></g>
+    <g class="node n4"><circle cx="37" cy="77" r="1" opacity="0.8"/></g>
+  </g>
+
+  <g stroke-width="1.5" stroke-linejoin="round">
+    <path class="petal" d="M50,50 Q75,25 90,50 Q75,75 50,50" transform="rotate(0, 50, 50)"/>
+    <path class="petal" d="M50,50 Q75,25 90,50 Q75,75 50,50" transform="rotate(72, 50, 50)"/>
+    <path class="petal" d="M50,50 Q75,25 90,50 Q75,75 50,50" transform="rotate(144, 50, 50)"/>
+    <path class="petal" d="M50,50 Q75,25 90,50 Q75,75 50,50" transform="rotate(216, 50, 50)"/>
+    <path class="petal" d="M50,50 Q75,25 90,50 Q75,75 50,50" transform="rotate(288, 50, 50)"/>
+  </g>
+
+  <circle class="core" cx="50" cy="50" r="3" fill="#c9a227"/>
+  <circle class="core-inner" cx="50" cy="50" r="1.5" fill="#0f121c"/>
+</svg>

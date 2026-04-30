@@ -1,0 +1,30 @@
+<!-- save as ma-polar-logo-static.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <title>M.A Tech &amp; Math Polar Geometry Logo</title>
+
+  <!-- The 3 Core Rings (Physics / Gravity) -->
+  <circle cx="50" cy="50" r="30" fill="none" stroke="#c9a227" stroke-width="1.5" opacity="0.9"/>
+  <circle cx="50" cy="50" r="27" fill="none" stroke="#c9a227" stroke-width="1" opacity="0.75" stroke-dasharray="6 2"/>
+  <circle cx="50" cy="50" r="24" fill="none" stroke="#c9a227" stroke-width="0.8" opacity="0.5"/>
+
+  <!-- Orbital Data Nodes (Physics / Tech Electrons) -->
+  <g fill="#c9a227">
+    <circle cx="23" cy="38" r="1.5" />
+    <circle cx="77" cy="62" r="1.5" />
+    <circle cx="63" cy="23" r="1" opacity="0.8"/>
+    <circle cx="37" cy="77" r="1" opacity="0.8"/>
+  </g>
+
+  <!-- 5 bold rose petals with outline stroke to clearly separate them -->
+  <g fill="#c9a227" stroke="#0f121c" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M50,50 Q75,25 90,50 Q75,75 50,50" transform="rotate(0, 50, 50)" />
+    <path d="M50,50 Q75,25 90,50 Q75,75 50,50" transform="rotate(72, 50, 50)" />
+    <path d="M50,50 Q75,25 90,50 Q75,75 50,50" transform="rotate(144, 50, 50)" />
+    <path d="M50,50 Q75,25 90,50 Q75,75 50,50" transform="rotate(216, 50, 50)" />
+    <path d="M50,50 Q75,25 90,50 Q75,75 50,50" transform="rotate(288, 50, 50)" />
+  </g>
+
+  <!-- High Tech Center Source -->
+  <circle cx="50" cy="50" r="3" fill="#c9a227"/>
+  <circle cx="50" cy="50" r="1.5" fill="#0f121c"/>
+</svg>
