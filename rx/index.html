@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RX-VISUALIZER</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&family=Inter:wght@300;400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+      :root {
+        --bg-color: #0b0f1a;
+        --sidebar-bg: #161b22;
+        --accent-color: #58a6ff;
+        --text-primary: #c9d1d9;
+        --text-secondary: #8b949e;
+        --terminal-bg: #000000;
+        --border-color: #30363d;
+        --success: #238636;
+        --prompt-color: #3fb950;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", sans-serif;
+      }
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-primary);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      header {
+        height: 50px;
+        background: #161b22;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        z-index: 10;
+      }
+      .logo {
+        font-weight: 700;
+        color: var(--accent-color);
+        letter-spacing: 1px;
+      }
+
+      .main-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .sidebar {
+        width: 240px;
+        background: var(--sidebar-bg);
+        border-right: 1px solid var(--border-color);
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .tab-btn {
+        padding: 10px 12px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        text-align: left;
+        cursor: pointer;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: 0.2s;
+      }
+      .tab-btn:hover {
+        background: #21262d;
+        color: var(--text-primary);
+      }
+      .tab-btn.active {
+        background: #1f6feb;
+        color: white;
+      }
+
+      .workspace {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #0d1117;
+        position: relative;
+      }
+      .content-header {
+        padding: 15px 25px;
+        border-bottom: 1px solid var(--border-color);
+        background: #0d1117;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .content-header h1 {
+        font-size: 1.1rem;
+        color: var(--accent-color);
+      }
+
+      .demo-area {
+        flex: 1;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        overflow: hidden;
+      }
+
+      .terminals-wrapper {
+        display: flex;
+        gap: 15px;
+        flex: 1;
+        overflow: hidden;
+      }
+      .terminal-window {
+        flex: 1;
+        background: var(--terminal-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .terminal-header {
+        background: #21262d;
+        padding: 6px 12px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .term-label {
+        font-size: 0.65rem;
+        color: var(--text-secondary);
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .terminal-body {
+        flex: 1;
+        padding: 15px;
+        font-family: "Fira Code", monospace;
+        font-size: 0.82rem;
+        color: #d1d5db;
+        overflow-y: auto;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .floating-controls {
+        position: absolute;
+        bottom: 25px;
+        right: 25px;
+        display: flex;
+        gap: 10px;
+        z-index: 100;
+      }
+      .btn {
+        padding: 8px 18px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+        text-decoration: none;
+      }
+      .btn-primary {
+        background: #238636;
+        color: white;
+      }
+      .btn-next {
+        background: #1f6feb;
+        color: white;
+        display: none;
+      }
+      .btn-outline {
+        background: #30363d;
+        color: white;
+        border: 1px solid var(--border-color);
+      }
+      .btn-outline:hover {
+        background: #3c444d;
+      }
+
+      .prompt {
+        color: var(--prompt-color);
+      }
+      .log-s {
+        color: #f2f2f2;
+      }
+      .log-c {
+        color: #58a6ff;
+      }
+      .log-info {
+        color: #8b949e;
+        font-style: italic;
+      }
+
+      #doc-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
+      #doc-content {
+        background: #161b22;
+        padding: 40px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        color: #c9d1d9;
+        line-height: 1.6;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      #doc-content h1,
+      #doc-content h2,
+      #doc-content h3 {
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+        margin: 25px 0 10px;
+        color: var(--accent-color);
+      }
+      #doc-content table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 20px 0;
+        border: 1px solid var(--border-color);
+      }
+      #doc-content th,
+      #doc-content td {
+        border: 1px solid var(--border-color);
+        padding: 12px;
+        text-align: left;
+      }
+      #doc-content pre {
+        background: #0d1117;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        overflow-x: auto;
+        border: 1px solid var(--border-color);
+      }
+      #doc-content blockquote {
+        border-left: 4px solid var(--accent-color);
+        padding-left: 15px;
+        color: #8b949e;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">RX-VISUALIZER <span style="font-weight: 300; opacity: 0.6">v4.8</span></div>
+      <div style="font-size: 0.8rem; color: var(--text-secondary)">Mohamed Ali BENBELGHITH - GL2/1</div>
+    </header>
+
+    <div class="main-container">
+      <div class="sidebar">
+        <button class="tab-btn active" onclick="switchTab('http')">🌐 2: HTTP Client</button>
+        <button class="tab-btn" onclick="switchTab('tcp')">🔗 3: TCP Sockets</button>
+        <button class="tab-btn" onclick="switchTab('udp')">⚡ 4: UDP Sockets</button>
+        <button class="tab-btn" onclick="switchTab('concurrent')">🏗️ 5: Concurrent Server</button>
+        <div style="height: 1px; background: var(--border-color); margin: 10px 0"></div>
+        <button class="tab-btn" onclick="switchTab('doc')">📄 Documentation & PDF</button>
+      </div>
+
+      <div class="workspace">
+        <div class="content-header">
+          <h1 id="title">Visualisation : HTTP</h1>
+          <div id="doc-actions" style="display: none">
+            <a href="RX_cr.pdf" download="RX_compte_rendu.pdf" class="btn btn-outline"
+              >📥 Download Final Report (PDF)</a
+            >
+          </div>
+        </div>
+
+        <div class="demo-area" id="demo-box">
+          <div class="terminals-wrapper" id="layout-terminals">
+            <div class="terminal-window" id="win-left">
+              <div class="terminal-header"><span class="term-label" id="label-left">Server Console</span></div>
+              <div class="terminal-body" id="term-left"></div>
+            </div>
+            <div class="terminal-window" id="win-right">
+              <div class="terminal-header"><span class="term-label">Client Console</span></div>
+              <div class="terminal-body" id="term-right"></div>
+            </div>
+          </div>
+          <div id="doc-wrapper" style="display: none">
+            <div id="doc-content"></div>
+          </div>
+        </div>
+
+        <div class="floating-controls" id="controls">
+          <button class="btn btn-primary" id="btn-start" onclick="startSim()">▶ Start Demo</button>
+          <button class="btn btn-next" id="btn-next" onclick="nextStep()">➡ Next Step</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentModule = "http";
+      let currentStep = 0;
+      let activeLogs = [];
+
+      const LOGS = {
+        http: [
+          { t: "left", m: "./client_http google.com 80", type: "prompt" },
+          {
+            t: "left",
+            m: "[INFO] Connecté à google.com:80\n\nEntrez votre requête HTTP :",
+            type: "log-info",
+            auto: true,
+          },
+          { t: "left", m: "GET / HTTP/1.1\nHost: google.com\n\n", type: "log-c" },
+          { t: "left", m: "=== Réponse du serveur ===", type: "log-info", auto: true },
+          {
+            t: "left",
+            m: "HTTP/1.1 200 OK\nDate: Thu, 30 Apr 2026 21:15:00 GMT\nServer: gws\n\n[Contenu HTML]",
+            type: "log-s",
+          },
+        ],
+        tcp: [
+          { t: "left", m: "./serveur_tcp 5000", type: "prompt" },
+          { t: "left", m: "[SERVEUR] En écoute sur le port 5000...", type: "log-s", auto: true },
+          { t: "right", m: "./client_tcp 127.0.0.1 5000", type: "prompt" },
+          { t: "right", m: "[CLIENT] Connecté à 127.0.0.1:5000", type: "log-info", auto: true },
+          { t: "left", m: "[SERVEUR] Client connecté depuis 127.0.0.1:41096", type: "log-info", auto: true },
+          { t: "left", m: "[SERVEUR] Message 1 : Il est 21:16:05 !", type: "log-s", auto: true },
+          { t: "right", m: "[CLIENT] Reçu : Il est 21:16:05 !", type: "log-c", auto: true },
+          { t: "left", m: "[SERVEUR] Message 2 : Il est 21:16:06 !", type: "log-s", auto: true },
+          { t: "right", m: "[CLIENT] Reçu : Il est 21:16:06 !", type: "log-c", auto: true },
+          { t: "left", m: "[SERVEUR] Message 3 : Il est 21:16:07 !", type: "log-s", auto: true },
+          { t: "right", m: "[CLIENT] Reçu : Il est 21:16:07 !", type: "log-c", auto: true },
+          { t: "left", m: "[SERVEUR] Message 4 : Il est 21:16:08 !", type: "log-s", auto: true },
+          { t: "right", m: "[CLIENT] Reçu : Il est 21:16:08 !", type: "log-c" },
+        ],
+        udp: [
+          { t: "left", m: "./serveur_udp 5001", type: "prompt" },
+          { t: "left", m: "[SERVEUR UDP] En écoute sur le port 5001...", type: "log-s", auto: true },
+          { t: "right", m: "./client_udp 127.0.0.1 5001", type: "prompt" },
+          { t: "left", m: "[SERVEUR UDP] Message de 127.0.0.1:58512 : Bonjour", type: "log-info", auto: true },
+          { t: "right", m: "[CLIENT UDP] Serveur: Bonjour !", type: "log-c", auto: true },
+          {
+            t: "left",
+            m: "[SERVEUR UDP] Message de 127.0.0.1:58512 : Quelle heure est-il ?",
+            type: "log-info",
+            auto: true,
+          },
+          { t: "right", m: "[CLIENT UDP] Reçu : Il est 21:17:01 !", type: "log-c", auto: true },
+          {
+            t: "left",
+            m: "[SERVEUR UDP] Message de 127.0.0.1:58512 : Quelle heure est-il ?",
+            type: "log-info",
+            auto: true,
+          },
+          { t: "right", m: "[CLIENT UDP] Reçu : Il est 21:17:02 !", type: "log-c" },
+        ],
+        concurrent: [
+          { t: "left", m: "./serveur_concurrent", type: "prompt" },
+          { t: "left", m: "[SERVEUR] Service 1 en écoute sur le port 5000\n[SERVEUR] Service 2 en écoute sur le port 5001\n[SERVEUR] Service 3 en écoute sur le port 5002", type: "log-s", auto: true },
+          { t: "left", m: "\n[SERVEUR] Services disponibles :\n  Port 5000 : Heure courante (60 fois, sleep 1s)\n  Port 5001 : Nombre de processus actifs\n  Port 5002 : Echo", type: "log-info", auto: true },
+          { t: "left", m: "\n[S1] Client 127.0.0.1:53480 connecté", type: "log-s", auto: true },
+          { t: "left", m: "select: Interrupted system call\n^C", type: "log-err" },
+        ],
+      };
+
+      const README_MD = `# TP Sockets GL2 — Guide complet
+
+> [!IMPORTANT]
+> **Environnement requis :** Ce TP utilise des fonctionnalités POSIX (sockets Linux, \`fork()\`, \`select()\`).
+> Pour l'exécuter sur Windows, utilisez **WSL** (Windows Subsystem for Linux).
+
+## Structure des fichiers
+
+| Fichier                   | Rôle                                      |
+|---------------------------|-------------------------------------------|
+| \`2_client_http.c\`         | Partie 2 : client HTTP TCP                |
+| \`3_serveur_tcp.c\`         | Partie 3 : serveur TCP (heure)            |
+| \`3_client_tcp.c\`          | Partie 3 : client TCP (heure)             |
+| \`4_serveur_udp.c\`         | Partie 4 : serveur UDP (heure)            |
+| \`4_client_udp.c\`          | Partie 4 : client UDP (heure)             |
+| \`5_serveur_concurrent.c\`  | Partie 5 : serveur concurrent (3 services)|
+| \`Makefile\`                | Compilation en une commande               |
+
+## Compilation
+
+\`\`\`bash
+make all
+\`\`\`
+
+---
+
+## Partie 2 — Client HTTP
+
+### Lancer le client
+
+\`\`\`bash
+./client_http 10.250.101.1 80
+\`\`\`
+
+Entrer ensuite :
+\`\`\`
+HEAD / HTTP/1.1
+Host: 10.250.101.1
+Accept: */*
+
+\`\`\`
+*(ligne vide finale obligatoire)*
+
+Remplacer HEAD par GET pour récupérer le contenu de la page.
+
+### Réponses aux questions
+
+**Établissement de la connexion au niveau TCP :**  
+TCP utilise un three-way handshake :
+1. Client → Serveur : SYN
+2. Serveur → Client : SYN-ACK
+3. Client → Serveur : ACK
+
+**Établissement au niveau HTTP :**  
+HTTP/1.1 est sans état. La connexion est établie par TCP ; HTTP envoie ensuite sa requête texte.
+
+**Qui ferme la connexion et quand ?**  
+Avec HEAD : le serveur ferme après la réponse (Connection: close).  
+Avec GET : le serveur envoie le body puis ferme (ou le client peut fermer).
+
+**Ports utilisés :**  
+- Serveur : port 80 (fixe, bien connu)
+- Client : port éphémère aléatoire (> 1024, ex: 54321)
+
+**Chronogramme simplifié :**
+\`\`\`
+Client                    Serveur
+  |-------- SYN ------------>|
+  |<------- SYN-ACK ---------|
+  |-------- ACK ------------>|
+  |--- GET / HTTP/1.1 ------->|
+  |<-- HTTP/1.1 200 OK ------|
+  |<-- [données HTML] --------|
+  |<------- FIN -------------|
+  |-------- FIN-ACK -------->|
+\`\`\`
+
+---
+
+## Partie 3 — TCP : transfert de messages
+
+### Lancer
+
+Machine serveur (Station 2) :
+\`\`\`bash
+./serveur_tcp 5000
+\`\`\`
+
+Machine client (Station 1) :
+\`\`\`bash
+./client_tcp <IP_serveur> 5000
+\`\`\`
+
+### Réponses aux questions
+
+**Comptage sans sleep vs avec sleep(1) :**  
+Sans sleep : les messages peuvent être fusionnés par TCP (algorithme de Nagle).
+Un seul recv() peut ramener plusieurs messages d'un coup → le comptage par '\\n'
+est nécessaire. Aucune perte : TCP garantit la livraison.
+
+Avec sleep(1) : chaque message est envoyé séparément, les recv() correspondent
+mieux aux send(). Toujours aucune perte.
+
+**Segments TCP ≠ écritures send() ?**  
+OUI. TCP est un flux d'octets, pas de messages. Il peut regrouper (Nagle) ou
+découper les données. Un send() peut produire plusieurs segments, ou plusieurs
+send() peuvent être regroupés en un seul segment.
+
+**Débrancher le câble :**  
+- Câble débranché durablement : recv()/send() bloque puis retourne une erreur
+  ECONNRESET ou ETIMEDOUT après le timeout TCP (peut prendre plusieurs minutes).
+- Câble rebranché rapidement : la connexion TCP survit si le timeout n'est pas
+  atteint ; les données sont retransmises automatiquement.
+
+**Plusieurs clients simultanés (serveur itératif) :**  
+Non, le serveur itératif (sans fork) ne peut servir qu'un client à la fois.
+Les autres clients sont dans la file d'attente (backlog).
+Si la file est pleine (BACKLOG=5), les nouveaux clients reçoivent ECONNREFUSED
+ou leur SYN est ignoré.
+
+---
+
+## Partie 4 — UDP : transfert de messages
+
+### Lancer
+
+Machine serveur :
+\`\`\`bash
+./serveur_udp 5001
+\`\`\`
+
+Machine client :
+\`\`\`bash
+./client_udp <IP_serveur> 5001
+\`\`\`
+
+### Réponses aux questions
+
+**Différences TCP vs UDP :**
+
+| Critère          | TCP                       | UDP                        |
+|------------------|---------------------------|----------------------------|
+| Connexion        | Oui (three-way handshake) | Non                        |
+| Fiabilité        | Garantie                  | Aucune garantie            |
+| Ordre            | Garanti                   | Non garanti                |
+| Pertes           | Impossibles (retrans.)    | Possibles                  |
+| Surcharge        | Headers + retransmissions | Léger                      |
+| Adapté à         | HTTP, SSH, FTP...         | DNS, streaming, jeux...    |
+
+**Pertes en UDP :**  
+Observables si le réseau est saturé ou si le sleep(1) côté serveur désynchronise
+l'envoi/réception. Le client implémente un timeout (SO_RCVTIMEO) pour ne pas
+bloquer indéfiniment.
+
+**Serveur UDP multi-clients :**  
+UDP étant sans connexion, le serveur peut lire des datagrammes de plusieurs
+clients dans la même boucle recvfrom(). Pour les traiter en parallèle, on peut
+aussi utiliser fork() après recvfrom().
+
+---
+
+## Partie 5 — Serveur concurrent
+
+### Lancer
+
+\`\`\`bash
+./serveur_concurrent
+\`\`\`
+
+Le serveur écoute simultanément sur 3 ports :
+- **5000** : heure courante (60 messages, sleep 1s par message)
+- **5001** : nombre de processus actifs (ps aux | wc -l)
+- **5002** : service echo
+
+### Test de concurrence
+
+Ouvrir plusieurs terminaux et lancer simultanément :
+\`\`\`bash
+# Terminal 1
+./client_tcp 127.0.0.1 5000
+
+# Terminal 2 (en même temps que Terminal 1)
+./client_tcp 127.0.0.1 5000
+
+# Terminal 3 (service différent)
+./client_tcp 127.0.0.1 5001
+\`\`\`
+
+Observer que les deux clients sur le port 5000 reçoivent leurs messages
+en même temps (timestamps identiques), prouvant le traitement parallèle.
+
+### Réponse à la question sur le temps
+
+Avec N clients simultanés sur le service heure (sleep 1s × 60 messages) :
+- Serveur itératif : temps total = N × 60 secondes
+- Serveur concurrent (fork) : temps total ≈ 60 secondes (quel que soit N)
+
+Le fork() crée un processus fils par client ; ils s'exécutent en parallèle.
+Cependant, si N est très grand : la création de nombreux processus consomme
+beaucoup de mémoire et de ressources CPU. Le scheduler doit gérer tous ces
+processus, ce qui peut dégrader les performances.
+
+### Fonctionnement interne (select + fork)
+
+\`\`\`
+main()
+  └── select() surveille les 3 sockets d'écoute
+        ├── Connexion sur port 5000 → accept() → fork()
+        │     ├── Fils : service_heure() → close → exit(0)
+        │     └── Père : ferme conn_fd, retourne à select()
+        ├── Connexion sur port 5001 → accept() → fork()
+        │     ├── Fils : service_processus() → close → exit(0)
+        │     └── Père : ferme conn_fd, retourne à select()
+        └── Connexion sur port 5002 → accept() → fork()
+              ├── Fils : service_echo() → close → exit(0)
+              └── Père : ferme conn_fd, retourne à select()
+\`\`\`
+
+### Éviter les zombies
+
+Le gestionnaire SIGCHLD appelle waitpid(WNOHANG) pour récupérer les fils
+terminés sans bloquer le père.`;
+
+      function switchTab(id) {
+        currentModule = id;
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        event.target.classList.add("active");
+
+        if (id === "doc") {
+          document.getElementById("layout-terminals").style.display = "none";
+          document.getElementById("doc-wrapper").style.display = "block";
+          document.getElementById("doc-actions").style.display = "block";
+          document.getElementById("doc-content").innerHTML = marked.parse(README_MD);
+          document.getElementById("controls").style.display = "none";
+          document.getElementById("title").textContent = "Documentation & Rapport PDF";
+        } else {
+          document.getElementById("layout-terminals").style.display = "flex";
+          document.getElementById("doc-wrapper").style.display = "none";
+          document.getElementById("doc-actions").style.display = "none";
+          document.getElementById("controls").style.display = "flex";
+          document.getElementById("title").textContent = "Visualisation : " + id.toUpperCase();
+
+          const isDual = id === "tcp" || id === "udp";
+          document.getElementById("win-right").style.display = isDual ? "flex" : "none";
+          document.getElementById("label-left").textContent = isDual ? "Serveur Console" : "Main Console";
+
+          resetSim();
+        }
+      }
+
+      function resetSim() {
+        currentStep = 0;
+        activeLogs = LOGS[currentModule];
+        document.getElementById("term-left").innerHTML = '<div class="log-info">Prêt. Cliquez sur "Start Demo".</div>';
+        document.getElementById("term-right").innerHTML = "";
+        document.getElementById("btn-start").style.display = "block";
+        document.getElementById("btn-next").style.display = "none";
+      }
+
+      function startSim() {
+        document.getElementById("btn-start").style.display = "none";
+        document.getElementById("btn-next").style.display = "flex";
+        document.getElementById("term-left").innerHTML = "";
+        nextStep();
+      }
+
+      async function nextStep() {
+        if (currentStep >= activeLogs.length) {
+          const end = document.createElement("div");
+          end.className = "log-info";
+          end.textContent = "\n[Simulation terminée]";
+          appendLine(activeLogs[0].t, end);
+          document.getElementById("btn-next").style.display = "none";
+          return;
+        }
+
+        const step = activeLogs[currentStep];
+        const div = document.createElement("div");
+        if (step.type === "prompt") {
+          div.innerHTML = `<span class="prompt">mohamed_ali@MedAli:~$</span> <span class="log-s">${step.m}</span>`;
+        } else {
+          div.className = step.type;
+          div.textContent = step.m;
+        }
+        appendLine(step.t, div);
+        currentStep++;
+        if (step.auto && currentStep < activeLogs.length) {
+          await new Promise((r) => setTimeout(r, 600));
+          nextStep();
+        }
+      }
+
+      function appendLine(target, element) {
+        const container = document.getElementById("term-" + target);
+        if (container) {
+          container.appendChild(element);
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+
+      window.onload = () => {
+        switchTab("http");
+      };
+    </script>
+  </body>
+</html>
