@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IMO 2026 Problem 1 Visualizer</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <header class="hero-card">
+        <div class="hero-copy">
+          <p class="eyebrow">Interactive Mathematics Lab</p>
+          <h1>IMO 2026 Problem 1</h1>
+        </div>
+
+        <div class="hero-controls">
+          <label class="control-card" for="countInput">
+            <span>Initial count</span>
+            <input id="countInput" type="range" min="2" max="26" value="8" />
+            <strong id="countValue">8</strong>
+          </label>
+
+          <button id="randomBtn" class="primary-btn">Generate random</button>
+          <button id="resetBtn" class="secondary-btn">Reset</button>
+        </div>
+      </header>
+
+      <main class="dashboard-grid">
+        <section class="panel board-panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Blackboard</p>
+              <h2>Interactive board</h2>
+            </div>
+            <div class="legend">
+              <span class="legend-pill chosen">Auto pick</span>
+              <span class="legend-pill first">First pick</span>
+              <span class="legend-pill second">Second pick</span>
+            </div>
+          </div>
+
+          <div class="input-row">
+            <textarea id="numbersInput" placeholder="Example: 12, 18, 20, 45, 30"></textarea>
+            <button id="loadBtn" class="secondary-btn">Load custom</button>
+          </div>
+
+          <div id="board" class="board"></div>
+          <p class="helper-text">Select two numbers to apply the transformation.</p>
+        </section>
+
+        <section class="panel right-panel">
+          <div id="statsGrid" class="stats-grid"></div>
+
+          <div class="controls-inline">
+            <div class="button-row">
+              <button id="stepBtn" class="primary-btn">Step</button>
+              <button id="autoBtn" class="primary-btn">Auto play</button>
+              <button id="pauseBtn" class="secondary-btn">Pause</button>
+            </div>
+
+            <div class="speed-group">
+              <div class="speed-buttons">
+                <button class="speed-btn" data-speed="1800">Slow</button>
+                <button class="speed-btn active" data-speed="900">Normal</button>
+                <button class="speed-btn" data-speed="400">Fast</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-header heatmap-header">
+            <div>
+              <p class="section-label">Prime matrix</p>
+              <h2>Heatmap</h2>
+            </div>
+          </div>
+          <div class="heatmap-wrap">
+            <table id="heatmap"></table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
