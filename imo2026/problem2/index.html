@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IMO 2026 Problem 2 Visualizer</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #060816;
+        --panel: rgba(12, 18, 36, 0.78);
+        --line: rgba(255, 255, 255, 0.12);
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --accent: #5eead4;
+        --accent-2: #60a5fa;
+        --accent-3: #a78bfa;
+        --danger: #fb7185;
+        --success: #34d399;
+        --chosen: #facc15;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; padding: 0; height: 100vh; overflow: hidden;
+        font-family: Inter, "Segoe UI", Roboto, sans-serif;
+        background: linear-gradient(135deg, var(--bg), #111827 65%);
+        color: var(--text);
+      }
+      button, input { font: inherit; }
+      button {
+        border: 0; cursor: pointer;
+        transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      }
+      button:hover { transform: translateY(-1px); }
+      .app-shell { height: 100vh; display: flex; flex-direction: column; padding: 14px 18px; gap: 10px; overflow: hidden; }
+      .hero-card, .panel {
+        background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+        backdrop-filter: blur(24px); box-shadow: 0 12px 36px rgba(2,6,23,.35);
+      }
+      .hero-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 18px; flex-shrink: 0; flex-wrap: wrap; }
+      .eyebrow, .section-label { margin: 0 0 3px; text-transform: uppercase; letter-spacing: .24em; font-size: .68rem; color: var(--accent); }
+      h1 { margin: 0; font-size: 1.15rem; }
+      h2 { margin: 0; font-size: .95rem; }
+      .helper-text { margin: 4px 0 0; color: var(--muted); font-size: .78rem; }
+      .hero-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .primary-btn, .secondary-btn { padding: 7px 11px; border-radius: 999px; color: var(--text); font-size: .82rem; }
+      .primary-btn { background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #04111d; font-weight: 700; }
+      .secondary-btn { background: rgba(255,255,255,.06); border: 1px solid var(--line); }
+      .nav-strip { display: flex; gap: 6px; flex-wrap: wrap; }
+      .nav-strip a { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); font-size: .76rem; text-decoration: none; color: var(--muted); }
+      .nav-strip a.current { color: #04111d; background: linear-gradient(135deg, var(--accent-2), var(--accent)); border-color: transparent; font-weight: 700; }
+      .dashboard-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+      .panel { padding: 12px 14px; display: flex; flex-direction: column; min-height: 0; }
+      .panel-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; flex-shrink: 0; }
+      .legend { display: flex; gap: 6px; flex-wrap: wrap; }
+      .legend-pill { padding: 3px 7px; border-radius: 999px; font-size: .7rem; background: rgba(255,255,255,.06); }
+      .canvas-wrap { flex: 1; min-height: 0; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--line); overflow: hidden; }
+      svg { width: 100%; height: 100%; display: block; touch-action: none; }
+      .stats-grid { display: flex; gap: 8px; flex-shrink: 0; margin-bottom: 8px; flex-wrap: wrap; }
+      .stat-tile { flex: 1; min-width: 80px; background: rgba(255,255,255,.05); border-radius: 12px; padding: 8px 10px; border: 1px solid var(--line); text-align: center; }
+      .stat-tile.m-result { background: linear-gradient(135deg, rgba(94,234,212,.12), rgba(96,165,250,.1)); border-color: rgba(94,234,212,.28); }
+      .stat-label { font-size: .68rem; color: var(--muted); margin-bottom: 3px; }
+      .stat-value { font-size: 1rem; font-weight: 700; }
+      .stat-value.ok { color: var(--success); }
+      .cond-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+      .cond-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 9px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); font-size: .78rem; gap: 8px; }
+      .cond-label { color: var(--muted); }
+      .cond-vals { display: flex; gap: 6px; align-items: center; font-variant-numeric: tabular-nums; }
+      .badge { padding: 2px 7px; border-radius: 999px; font-size: .68rem; font-weight: 700; }
+      .badge.ok { background: rgba(52,211,153,.16); color: var(--success); border: 1px solid rgba(52,211,153,.3); }
+      .badge.bad { background: rgba(251,113,133,.14); color: var(--danger); border: 1px solid rgba(251,113,133,.28); }
+      .controls-inline { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; flex-shrink: 0; }
+      @media (max-width: 900px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+        html, body { height: auto; overflow: auto; }
+        .app-shell { height: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero-card">
+        <div>
+          <p class="eyebrow">Interactive Mathematics Lab</p>
+          <h1>IMO 2026 Problem 2</h1>
+          <p class="helper-text">Drag A, B, C, K, L. When the three angle pairs match, OM equals ON.</p>
+        </div>
+        <div class="hero-controls">
+          <button id="randomBtn" class="primary-btn">Randomize triangle</button>
+          <button id="autoFitBtn" class="secondary-btn">Auto-fit K &amp; L</button>
+          <button id="resetBtn" class="secondary-btn">Reset</button>
+        </div>
+      </header>
+
+      <nav class="nav-strip">
+        <a href="../index.html">Hub</a>
+        <a href="../problem1/index.html">P1 · Blackboard</a>
+        <a href="../problem2/index.html" class="current">P2 · Circumcenter</a>
+        <a href="../problem3/index.html">P3 · Stick game</a>
+        <a href="../problem4/index.html">P4 · Triangle cuts</a>
+        <a href="../problem5/index.html">P5 · Sandwich ineq.</a>
+        <a href="../problem6/index.html">P6 · gcd sequence</a>
+      </nav>
+
+      <main class="dashboard-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Construction</p>
+              <h2>Triangle ABC with M, N, K, L, O</h2>
+            </div>
+            <div class="legend">
+              <span class="legend-pill" style="color:#f8fafc">A B C</span>
+              <span class="legend-pill" style="color:#60a5fa">M N</span>
+              <span class="legend-pill" style="color:#f0abfc">K</span>
+              <span class="legend-pill" style="color:#93c5fd">L</span>
+              <span class="legend-pill" style="color:#facc15">O (circumcenter)</span>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <svg id="scene" viewBox="0 0 700 500"></svg>
+          </div>
+          <p class="helper-text">K should stay inside triangle BMC, L inside triangle BNC (shaded regions).</p>
+        </section>
+
+        <section class="panel">
+          <div class="stats-grid">
+            <div class="stat-tile"><div class="stat-label">OM</div><div class="stat-value" id="omVal">—</div></div>
+            <div class="stat-tile"><div class="stat-label">ON</div><div class="stat-value" id="onVal">—</div></div>
+            <div class="stat-tile m-result"><div class="stat-label">|OM − ON|</div><div class="stat-value" id="diffVal">—</div></div>
+          </div>
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Angle conditions</p>
+              <h2>Given equalities</h2>
+            </div>
+          </div>
+          <div class="cond-list" id="condList"></div>
+          <div class="controls-inline">
+            <button id="downloadNote" class="secondary-btn" style="visibility:hidden">-</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.getElementById("scene");
+      const condList = document.getElementById("condList");
+      const omVal = document.getElementById("omVal");
+      const onVal = document.getElementById("onVal");
+      const diffVal = document.getElementById("diffVal");
+
+      let pts = {};
+
+      function defaultPoints() {
+        pts = {
+          A: { x: 350, y: 70 },
+          B: { x: 120, y: 420 },
+          C: { x: 580, y: 420 },
+        };
+        deriveAndPlaceKL();
+      }
+
+      function midpoint(p, q) {
+        return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+      }
+
+      function deriveAndPlaceKL() {
+        const M = midpoint(pts.A, pts.B);
+        const N = midpoint(pts.A, pts.C);
+        pts.M = M;
+        pts.N = N;
+        // sensible starting positions inside BMC / BNC
+        pts.K = centroid([pts.B, M, pts.C]);
+        pts.L = centroid([pts.B, N, pts.C]);
+      }
+
+      function centroid(list) {
+        const x = list.reduce((s, p) => s + p.x, 0) / list.length;
+        const y = list.reduce((s, p) => s + p.y, 0) / list.length;
+        return { x, y };
+      }
+
+      function randomTriangle() {
+        pts.A = { x: 300 + Math.random() * 120 - 60, y: 55 + Math.random() * 50 };
+        pts.B = { x: 90 + Math.random() * 90, y: 380 + Math.random() * 60 };
+        pts.C = { x: 520 + Math.random() * 90, y: 380 + Math.random() * 60 };
+        deriveAndPlaceKL();
+        render();
+      }
+
+      function angleDeg(vertex, p1, p2) {
+        const v1x = p1.x - vertex.x, v1y = p1.y - vertex.y;
+        const v2x = p2.x - vertex.x, v2y = p2.y - vertex.y;
+        const dot = v1x * v2x + v1y * v2y;
+        const det = v1x * v2y - v1y * v2x;
+        return (Math.atan2(Math.abs(det), dot) * 180) / Math.PI;
+      }
+
+      function circumcenter(a, k, l) {
+        const d = 2 * (a.x * (k.y - l.y) + k.x * (l.y - a.y) + l.x * (a.y - k.y));
+        if (Math.abs(d) < 1e-6) return null;
+        const ax2ay2 = a.x * a.x + a.y * a.y;
+        const kx2ky2 = k.x * k.x + k.y * k.y;
+        const lx2ly2 = l.x * l.x + l.y * l.y;
+        const ox = (ax2ay2 * (k.y - l.y) + kx2ky2 * (l.y - a.y) + lx2ly2 * (a.y - k.y)) / d;
+        const oy = (ax2ay2 * (l.x - k.x) + kx2ky2 * (a.x - l.x) + lx2ly2 * (k.x - a.x)) / d;
+        return { x: ox, y: oy };
+      }
+
+      function dist(p, q) {
+        return Math.hypot(p.x - q.x, p.y - q.y);
+      }
+
+      function pointInTriangle(p, a, b, c) {
+        const d1 = sign(p, a, b), d2 = sign(p, b, c), d3 = sign(p, c, a);
+        const hasNeg = d1 < 0 || d2 < 0 || d3 < 0;
+        const hasPos = d1 > 0 || d2 > 0 || d3 > 0;
+        return !(hasNeg && hasPos);
+      }
+      function sign(p1, p2, p3) {
+        return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+      }
+
+      const conditions = [
+        { label: "∠KBA = ∠ACL", fn: () => [angleDeg(pts.B, pts.K, pts.A), angleDeg(pts.C, pts.A, pts.L)] },
+        { label: "∠LBK = ∠LNC", fn: () => [angleDeg(pts.B, pts.L, pts.K), angleDeg(pts.N, pts.L, pts.C)] },
+        { label: "∠LCK = ∠BMK", fn: () => [angleDeg(pts.C, pts.L, pts.K), angleDeg(pts.M, pts.B, pts.K)] },
+      ];
+
+      function el(tag, attrs) {
+        const e = document.createElementNS(svgNS, tag);
+        Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+        return e;
+      }
+
+      function render() {
+        svg.innerHTML = "";
+        const { A, B, C, M, N, K, L } = pts;
+
+        // shaded sub-triangles
+        svg.appendChild(el("polygon", { points: poly([B, M, C]), fill: "rgba(240,171,252,0.08)", stroke: "rgba(240,171,252,0.25)" }));
+        svg.appendChild(el("polygon", { points: poly([B, N, C]), fill: "rgba(147,197,253,0.08)", stroke: "rgba(147,197,253,0.25)" }));
+
+        // main triangle
+        svg.appendChild(el("polygon", { points: poly([A, B, C]), fill: "rgba(96,165,250,0.05)", stroke: "rgba(255,255,255,0.35)", "stroke-width": 2 }));
+
+        // circumcircle of AKL
+        const O = circumcenter(A, K, L);
+        if (O) {
+          const r = dist(O, A);
+          svg.appendChild(el("circle", { cx: O.x, cy: O.y, r, fill: "none", stroke: "#a78bfa", "stroke-width": 1.5, "stroke-dasharray": "5 4", opacity: 0.7 }));
+          svg.appendChild(dot(O, 5, "#facc15"));
+          label(O, "O", -12, -10, "#facc15");
+
+          // OM, ON segments
+          svg.appendChild(el("line", { x1: O.x, y1: O.y, x2: M.x, y2: M.y, stroke: "#5eead4", "stroke-width": 1.5, "stroke-dasharray": "3 3" }));
+          svg.appendChild(el("line", { x1: O.x, y1: O.y, x2: N.x, y2: N.y, stroke: "#34d399", "stroke-width": 1.5, "stroke-dasharray": "3 3" }));
+
+          const omD = dist(O, M), onD = dist(O, N);
+          omVal.textContent = omD.toFixed(1);
+          onVal.textContent = onD.toFixed(1);
+          const diff = Math.abs(omD - onD);
+          diffVal.textContent = diff.toFixed(2);
+          diffVal.classList.toggle("ok", diff < 1.5);
+        } else {
+          omVal.textContent = "—";
+          onVal.textContent = "—";
+          diffVal.textContent = "—";
+        }
+
+        // triangle AKL
+        svg.appendChild(el("polygon", { points: poly([A, K, L]), fill: "rgba(167,139,250,0.08)", stroke: "rgba(167,139,250,0.5)" }));
+
+        // static points
+        svg.appendChild(dot(M, 4, "#60a5fa"));
+        label(M, "M", 10, -8, "#60a5fa");
+        svg.appendChild(dot(N, 4, "#60a5fa"));
+        label(N, "N", 10, -8, "#60a5fa");
+
+        // draggable points
+        makeDraggable("A", "#f8fafc", -8, -12);
+        makeDraggable("B", "#f8fafc", -18, 18);
+        makeDraggable("C", "#f8fafc", 10, 18);
+        makeDraggable("K", "#f0abfc", 10, -10);
+        makeDraggable("L", "#93c5fd", 10, 14);
+
+        renderConditions();
+      }
+
+      function poly(list) {
+        return list.map((p) => `${p.x},${p.y}`).join(" ");
+      }
+
+      function dot(p, r, color) {
+        return el("circle", { cx: p.x, cy: p.y, r, fill: color, stroke: "#04111d", "stroke-width": 1 });
+      }
+
+      function label(p, text, dx, dy, color) {
+        const t = el("text", { x: p.x + dx, y: p.y + dy, fill: color, "font-size": 13, "font-weight": 700 });
+        t.textContent = text;
+        svg.appendChild(t);
+      }
+
+      function makeDraggable(key, color, dx, dy) {
+        const p = pts[key];
+        const g = el("g", {});
+        const c = dot(p, 8, color);
+        c.style.cursor = "grab";
+        g.appendChild(c);
+        const t = el("text", { x: p.x + dx, y: p.y + dy, fill: color, "font-size": 14, "font-weight": 700 });
+        t.textContent = key;
+        g.appendChild(t);
+        svg.appendChild(g);
+
+        let dragging = false;
+        c.addEventListener("pointerdown", (e) => {
+          dragging = true;
+          c.setPointerCapture(e.pointerId);
+        });
+        c.addEventListener("pointermove", (e) => {
+          if (!dragging) return;
+          const rect = svg.getBoundingClientRect();
+          const vb = svg.viewBox.baseVal;
+          const x = ((e.clientX - rect.left) / rect.width) * vb.width + vb.x;
+          const y = ((e.clientY - rect.top) / rect.height) * vb.height + vb.y;
+          pts[key].x = x;
+          pts[key].y = y;
+          if (key === "A" || key === "B" || key === "C") {
+            const K = pts.K, L = pts.L;
+            const M = midpoint(pts.A, pts.B);
+            const N = midpoint(pts.A, pts.C);
+            pts.M = M;
+            pts.N = N;
+          }
+          render();
+        });
+        const stop = () => (dragging = false);
+        c.addEventListener("pointerup", stop);
+        c.addEventListener("pointerleave", stop);
+      }
+
+      function renderConditions() {
+        condList.innerHTML = conditions
+          .map((cond) => {
+            const [v1, v2] = cond.fn();
+            const ok = Math.abs(v1 - v2) < 4;
+            return `
+            <div class="cond-row">
+              <span class="cond-label">${cond.label}</span>
+              <span class="cond-vals">
+                ${v1.toFixed(1)}° / ${v2.toFixed(1)}°
+                <span class="badge ${ok ? "ok" : "bad"}">${ok ? "match" : "off"}</span>
+              </span>
+            </div>`;
+          })
+          .join("");
+      }
+
+      function autoFit() {
+        const B = pts.B, C = pts.C, M = pts.M, N = pts.N;
+        let best = null;
+        let bestCost = Infinity;
+        function cost() {
+          let c = 0;
+          conditions.forEach((cond) => {
+            const [v1, v2] = cond.fn();
+            c += (v1 - v2) * (v1 - v2);
+          });
+          return c;
+        }
+        function randomInTri(a, b, cc) {
+          let r1 = Math.random(), r2 = Math.random();
+          if (r1 + r2 > 1) { r1 = 1 - r1; r2 = 1 - r2; }
+          return {
+            x: a.x + r1 * (b.x - a.x) + r2 * (cc.x - a.x),
+            y: a.y + r1 * (b.y - a.y) + r2 * (cc.y - a.y),
+          };
+        }
+        for (let i = 0; i < 6000; i += 1) {
+          const K = randomInTri(B, M, C);
+          const L = randomInTri(B, N, C);
+          pts.K = K;
+          pts.L = L;
+          const cst = cost();
+          if (cst < bestCost) {
+            bestCost = cst;
+            best = { K: { ...K }, L: { ...L } };
+          }
+        }
+        // local refinement
+        for (let iter = 0; iter < 800; iter += 1) {
+          const step = 6 * (1 - iter / 800);
+          const K = { x: best.K.x + (Math.random() - 0.5) * step, y: best.K.y + (Math.random() - 0.5) * step };
+          const L = { x: best.L.x + (Math.random() - 0.5) * step, y: best.L.y + (Math.random() - 0.5) * step };
+          pts.K = K;
+          pts.L = L;
+          const cst = cost();
+          if (cst < bestCost) {
+            bestCost = cst;
+            best = { K: { ...K }, L: { ...L } };
+          } else {
+            pts.K = best.K;
+            pts.L = best.L;
+          }
+        }
+        pts.K = best.K;
+        pts.L = best.L;
+        render();
+      }
+
+      document.getElementById("randomBtn").addEventListener("click", randomTriangle);
+      document.getElementById("resetBtn").addEventListener("click", () => {
+        defaultPoints();
+        render();
+      });
+      document.getElementById("autoFitBtn").addEventListener("click", autoFit);
+
+      defaultPoints();
+      render();
+    </script>
+  </body>
+</html>

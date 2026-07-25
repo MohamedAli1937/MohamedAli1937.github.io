@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IMO 2026 Problem 4 Visualizer</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #060816; --panel: rgba(12,18,36,.78); --line: rgba(255,255,255,.12);
+        --text: #f8fafc; --muted: #94a3b8; --accent: #5eead4; --accent-2: #60a5fa;
+        --accent-3: #a78bfa; --danger: #fb7185; --success: #34d399; --chosen: #facc15;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: Inter, "Segoe UI", Roboto, sans-serif; background: linear-gradient(135deg, var(--bg), #111827 65%); color: var(--text); }
+      button, input { font: inherit; }
+      button { border: 0; cursor: pointer; transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease; }
+      button:hover { transform: translateY(-1px); }
+      button:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+      .app-shell { height: 100vh; display: flex; flex-direction: column; padding: 14px 18px; gap: 10px; overflow: hidden; }
+      .hero-card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; backdrop-filter: blur(24px); box-shadow: 0 12px 36px rgba(2,6,23,.35); }
+      .hero-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 18px; flex-shrink: 0; flex-wrap: wrap; }
+      .eyebrow, .section-label { margin: 0 0 3px; text-transform: uppercase; letter-spacing: .24em; font-size: .68rem; color: var(--accent); }
+      h1 { margin: 0; font-size: 1.15rem; }
+      h2 { margin: 0; font-size: .95rem; }
+      .helper-text { margin: 4px 0 0; color: var(--muted); font-size: .78rem; }
+      .hero-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .control-card { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 10px; font-size: .82rem; }
+      .control-card input { accent-color: var(--accent); width: 90px; }
+      .primary-btn, .secondary-btn, .toggle-btn { padding: 7px 11px; border-radius: 999px; color: var(--text); font-size: .82rem; }
+      .primary-btn { background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #04111d; font-weight: 700; }
+      .secondary-btn, .toggle-btn { background: rgba(255,255,255,.06); border: 1px solid var(--line); }
+      .toggle-btn.active { background: rgba(250,204,21,.18); border-color: rgba(250,204,21,.4); color: var(--chosen); }
+      .nav-strip { display: flex; gap: 6px; flex-wrap: wrap; }
+      .nav-strip a { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); font-size: .76rem; text-decoration: none; color: var(--muted); }
+      .nav-strip a.current { color: #04111d; background: linear-gradient(135deg, var(--accent-2), var(--accent)); border-color: transparent; font-weight: 700; }
+      .dashboard-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+      .panel { padding: 12px 14px; display: flex; flex-direction: column; min-height: 0; gap: 8px; }
+      .panel-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-shrink: 0; }
+      .legend { display: flex; gap: 6px; flex-wrap: wrap; }
+      .legend-pill { padding: 3px 7px; border-radius: 999px; font-size: .7rem; background: rgba(255,255,255,.06); }
+      .canvas-wrap { flex: 1; min-height: 0; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--line); overflow: hidden; }
+      svg { width: 100%; height: 100%; display: block; }
+      .angle-row { display: flex; gap: 8px; flex-wrap: wrap; }
+      .angle-chip { flex: 1; min-width: 70px; text-align: center; padding: 6px 8px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--line); font-size: .8rem; }
+      .angle-chip.hit { background: rgba(250,204,21,.18); border-color: rgba(250,204,21,.42); color: var(--chosen); font-weight: 700; }
+      .stat-tile { background: rgba(255,255,255,.05); border-radius: 12px; padding: 8px 10px; border: 1px solid var(--line); text-align: center; }
+      .stat-label { font-size: .68rem; color: var(--muted); margin-bottom: 3px; }
+      .stat-value { font-size: 1rem; font-weight: 700; }
+      .edge-buttons { display: flex; gap: 6px; }
+      .edge-buttons button.active { background: rgba(94,234,212,.18); border-color: rgba(94,234,212,.4); color: var(--accent); }
+      .win-banner { padding: 10px 12px; border-radius: 10px; background: rgba(52,211,153,.16); border: 1px solid rgba(52,211,153,.35); color: var(--success); font-weight: 700; text-align: center; display: none; }
+      .win-banner.show { display: block; }
+      .log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; font-size: .76rem; }
+      .log-row { padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
+      .controls-inline { display: flex; gap: 8px; flex-wrap: wrap; }
+      @media (max-width: 900px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+        html, body { height: auto; overflow: auto; }
+        .app-shell { height: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero-card">
+        <div>
+          <p class="eyebrow">Interactive Mathematics Lab</p>
+          <h1>IMO 2026 Problem 4</h1>
+          <p class="helper-text">Mulan cuts toward the opposite vertex; Shan-Yu discards a piece. Can Mulan force an angle of θ?</p>
+        </div>
+        <div class="hero-controls">
+          <label class="control-card" for="thetaInput">
+            <span>θ</span>
+            <input id="thetaInput" type="range" min="1" max="179" value="60" />
+            <strong id="thetaValue">60°</strong>
+          </label>
+          <button id="newTriBtn" class="primary-btn">New random triangle</button>
+          <button id="resetBtn" class="secondary-btn">Reset round</button>
+        </div>
+      </header>
+
+      <nav class="nav-strip">
+        <a href="../index.html">Hub</a>
+        <a href="../problem1/index.html">P1 · Blackboard</a>
+        <a href="../problem2/index.html">P2 · Circumcenter</a>
+        <a href="../problem3/index.html">P3 · Stick game</a>
+        <a href="../problem4/index.html" class="current">P4 · Triangle cuts</a>
+        <a href="../problem5/index.html">P5 · Sandwich ineq.</a>
+        <a href="../problem6/index.html">P6 · gcd sequence</a>
+      </nav>
+
+      <main class="dashboard-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Current triangle T</p>
+              <h2>Cut preview</h2>
+            </div>
+            <div class="legend">
+              <span class="legend-pill" style="color:#f0abfc">Piece 1</span>
+              <span class="legend-pill" style="color:#93c5fd">Piece 2</span>
+              <span class="legend-pill" style="color:#facc15">θ match</span>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <svg id="scene" viewBox="0 0 620 400"></svg>
+          </div>
+          <div class="edge-buttons" id="edgeButtons"></div>
+          <div class="control-card" style="width:100%">
+            <span>Point P along edge</span>
+            <input id="tInput" type="range" min="4" max="96" value="50" style="flex:1; width:auto" />
+            <strong id="tValue">50%</strong>
+          </div>
+          <div class="controls-inline">
+            <button id="cutBtn" class="primary-btn">Cut toward opposite vertex</button>
+            <button id="manualToggle" class="toggle-btn">Manual Shan-Yu: off</button>
+          </div>
+          <div id="manualChoice" class="controls-inline" style="display:none">
+            <button id="keep1Btn" class="secondary-btn">Shan-Yu keeps Piece 1</button>
+            <button id="keep2Btn" class="secondary-btn">Shan-Yu keeps Piece 2</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="win-banner" id="winBanner">Mulan wins — T now has an angle of θ!</div>
+          <div class="angle-row" id="angleRow"></div>
+          <div class="stat-tile"><div class="stat-label">Cuts made</div><div class="stat-value" id="cutCount">0</div></div>
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Round log</p>
+              <h2>History</h2>
+            </div>
+          </div>
+          <div class="log" id="log"></div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const svgNS = "http://www.w3.org/2000/svg";
+      const scene = document.getElementById("scene");
+      const thetaInput = document.getElementById("thetaInput");
+      const thetaValue = document.getElementById("thetaValue");
+      const edgeButtons = document.getElementById("edgeButtons");
+      const tInput = document.getElementById("tInput");
+      const tValue = document.getElementById("tValue");
+      const cutBtn = document.getElementById("cutBtn");
+      const manualToggle = document.getElementById("manualToggle");
+      const manualChoice = document.getElementById("manualChoice");
+      const keep1Btn = document.getElementById("keep1Btn");
+      const keep2Btn = document.getElementById("keep2Btn");
+      const angleRow = document.getElementById("angleRow");
+      const cutCountEl = document.getElementById("cutCount");
+      const winBanner = document.getElementById("winBanner");
+      const logEl = document.getElementById("log");
+
+      const state = {
+        theta: 60,
+        triangle: [],
+        edge: 0,
+        t: 0.5,
+        manual: false,
+        cuts: 0,
+        won: false,
+        pending: null, // {sub1, sub2}
+      };
+
+      function deg(r) { return (r * 180) / Math.PI; }
+      function rad(d) { return (d * Math.PI) / 180; }
+
+      function triangleFromAngles(angB, angC, L) {
+        const angA = 180 - angB - angC;
+        const t2 = (L * Math.sin(rad(angB))) / Math.sin(rad(angA));
+        const A = { x: L - t2 * Math.cos(rad(angC)), y: t2 * Math.sin(rad(angC)) };
+        const B = { x: 0, y: 0 };
+        const C = { x: L, y: 0 };
+        return [A, B, C];
+      }
+
+      function randomTriangle() {
+        let a = 20 + Math.random() * 110;
+        let b = 20 + Math.random() * (170 - a - 20);
+        const angA = a, angB = b, angC = 180 - a - b;
+        state.triangle = triangleFromAngles(angB, angC, 300);
+        state.edge = 0;
+        state.t = 0.5;
+        state.cuts = 0;
+        state.won = false;
+        state.pending = null;
+        tInput.value = 50;
+        logEl.innerHTML = "";
+        winBanner.classList.remove("show");
+        render();
+      }
+
+      function angleDeg(vertex, p1, p2) {
+        const v1x = p1.x - vertex.x, v1y = p1.y - vertex.y;
+        const v2x = p2.x - vertex.x, v2y = p2.y - vertex.y;
+        const dot = v1x * v2x + v1y * v2y;
+        const det = v1x * v2y - v1y * v2x;
+        return deg(Math.atan2(Math.abs(det), dot));
+      }
+
+      function triAngles(tri) {
+        return [
+          angleDeg(tri[0], tri[1], tri[2]),
+          angleDeg(tri[1], tri[2], tri[0]),
+          angleDeg(tri[2], tri[0], tri[1]),
+        ];
+      }
+
+      function checkWin(tri) {
+        return triAngles(tri).some((a) => Math.abs(a - state.theta) < 0.6);
+      }
+
+      function edgeInfo(edgeIdx) {
+        // edge 0: p0-p1 opposite p2 ; edge1: p1-p2 opposite p0 ; edge2: p2-p0 opposite p1
+        const tri = state.triangle;
+        const map = [
+          { a: tri[0], b: tri[1], opp: tri[2], name: "Edge P0–P1" },
+          { a: tri[1], b: tri[2], opp: tri[0], name: "Edge P1–P2" },
+          { a: tri[2], b: tri[0], opp: tri[1], name: "Edge P2–P0" },
+        ];
+        return map[edgeIdx];
+      }
+
+      function lerp(p, q, t) {
+        return { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t };
+      }
+
+      function fitTransform(points) {
+        const xs = points.map((p) => p.x), ys = points.map((p) => p.y);
+        const minX = Math.min(...xs), maxX = Math.max(...xs);
+        const minY = Math.min(...ys), maxY = Math.max(...ys);
+        const w = Math.max(maxX - minX, 1), h = Math.max(maxY - minY, 1);
+        const pad = 40;
+        const targetW = 620 - pad * 2, targetH = 400 - pad * 2;
+        const scale = Math.min(targetW / w, targetH / h);
+        return (p) => ({
+          x: (p.x - minX) * scale + pad + (targetW - w * scale) / 2,
+          y: 400 - ((p.y - minY) * scale + pad + (targetH - h * scale) / 2),
+        });
+      }
+
+      function el(tag, attrs) {
+        const e = document.createElementNS(svgNS, tag);
+        Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+        return e;
+      }
+      function poly(list) { return list.map((p) => `${p.x},${p.y}`).join(" "); }
+
+      function render() {
+        thetaValue.textContent = `${state.theta}°`;
+        tValue.textContent = `${tInput.value}%`;
+        state.t = Number(tInput.value) / 100;
+
+        edgeButtons.innerHTML = "";
+        [0, 1, 2].forEach((idx) => {
+          const btn = document.createElement("button");
+          btn.className = "secondary-btn" + (state.edge === idx ? " active" : "");
+          btn.textContent = edgeInfo(idx).name;
+          btn.addEventListener("click", () => { state.edge = idx; state.pending = null; render(); });
+          edgeButtons.appendChild(btn);
+        });
+
+        const info = edgeInfo(state.edge);
+        const P = lerp(info.a, info.b, state.t);
+        const sub1 = [info.a, P, info.opp];
+        const sub2 = [P, info.b, info.opp];
+        state.pending = { sub1, sub2, P };
+
+        const allPts = [...state.triangle];
+        const transform = fitTransform(allPts);
+        scene.innerHTML = "";
+
+        const t0 = transform(state.triangle[0]);
+        const t1 = transform(state.triangle[1]);
+        const t2 = transform(state.triangle[2]);
+        const tp = transform(P);
+
+        scene.appendChild(el("polygon", { points: poly([transform(info.a), tp, transform(info.opp)]), fill: "rgba(240,171,252,0.16)", stroke: "none" }));
+        scene.appendChild(el("polygon", { points: poly([transform(P), transform(info.b), transform(info.opp)]), fill: "rgba(147,197,253,0.16)", stroke: "none" }));
+        scene.appendChild(el("polygon", { points: poly([t0, t1, t2]), fill: "none", stroke: "rgba(255,255,255,0.5)", "stroke-width": 2.5 }));
+        scene.appendChild(el("line", { x1: tp.x, y1: tp.y, x2: transform(info.opp).x, y2: transform(info.opp).y, stroke: "#facc15", "stroke-width": 2, "stroke-dasharray": "5 4" }));
+
+        [t0, t1, t2].forEach((p, i) => {
+          const c = el("circle", { cx: p.x, cy: p.y, r: 5, fill: "#f8fafc", stroke: "#04111d", "stroke-width": 1 });
+          scene.appendChild(c);
+          const lbl = el("text", { x: p.x + 8, y: p.y - 8, fill: "#f8fafc", "font-size": 12, "font-weight": 700 });
+          lbl.textContent = `P${i}`;
+          scene.appendChild(lbl);
+        });
+        const pc = el("circle", { cx: tp.x, cy: tp.y, r: 5, fill: "#facc15", stroke: "#04111d", "stroke-width": 1 });
+        scene.appendChild(pc);
+        const plbl = el("text", { x: tp.x + 8, y: tp.y - 8, fill: "#facc15", "font-size": 12, "font-weight": 700 });
+        plbl.textContent = "P";
+        scene.appendChild(plbl);
+
+        // angle chips for CURRENT triangle
+        const angles = triAngles(state.triangle);
+        angleRow.innerHTML = angles
+          .map((a, i) => {
+            const hit = Math.abs(a - state.theta) < 0.6;
+            return `<div class="angle-chip ${hit ? "hit" : ""}">P${i}: ${a.toFixed(1)}°</div>`;
+          })
+          .join("");
+        cutCountEl.textContent = state.cuts;
+
+        if (checkWin(state.triangle) && !state.won) {
+          state.won = true;
+          winBanner.classList.add("show");
+          cutBtn.disabled = true;
+        }
+
+        manualChoice.style.display = state.manual ? "flex" : "none";
+        cutBtn.disabled = state.won;
+      }
+
+      function angleDistScore(tri) {
+        const angles = triAngles(tri);
+        return Math.min(...angles.map((a) => Math.abs(a - state.theta)));
+      }
+
+      function performCut() {
+        if (state.won) return;
+        const { sub1, sub2 } = state.pending;
+        if (state.manual) {
+          manualChoice.style.display = "flex";
+          cutBtn.disabled = true;
+          return;
+        }
+        // heuristic adversarial Shan-Yu: keep the piece further (in angle-space) from theta
+        const score1 = angleDistScore(sub1);
+        const score2 = angleDistScore(sub2);
+        const keep = score1 >= score2 ? sub1 : sub2;
+        const discard = keep === sub1 ? "Piece 2" : "Piece 1";
+        applyChoice(keep, discard);
+      }
+
+      function applyChoice(keep, discardLabel) {
+        state.triangle = keep;
+        state.cuts += 1;
+        logRow(discardLabel);
+        state.edge = 0;
+        tInput.value = 50;
+        render();
+      }
+
+      function logRow(discardLabel) {
+        const row = document.createElement("div");
+        row.className = "log-row";
+        row.textContent = `Cut #${state.cuts}: Shan-Yu discards ${discardLabel}.`;
+        logEl.prepend(row);
+      }
+
+      thetaInput.addEventListener("input", () => { state.theta = Number(thetaInput.value); render(); });
+      tInput.addEventListener("input", render);
+      cutBtn.addEventListener("click", performCut);
+      manualToggle.addEventListener("click", () => {
+        state.manual = !state.manual;
+        manualToggle.textContent = `Manual Shan-Yu: ${state.manual ? "on" : "off"}`;
+        manualToggle.classList.toggle("active", state.manual);
+        manualChoice.style.display = "none";
+        cutBtn.disabled = state.won;
+      });
+      keep1Btn.addEventListener("click", () => applyChoice(state.pending.sub1, "Piece 2"));
+      keep2Btn.addEventListener("click", () => applyChoice(state.pending.sub2, "Piece 1"));
+      document.getElementById("newTriBtn").addEventListener("click", randomTriangle);
+      document.getElementById("resetBtn").addEventListener("click", randomTriangle);
+
+      randomTriangle();
+    </script>
+  </body>
+</html>

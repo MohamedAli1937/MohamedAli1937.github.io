@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IMO 2026 Problem 5 Visualizer</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #060816; --panel: rgba(12,18,36,.78); --line: rgba(255,255,255,.12);
+        --text: #f8fafc; --muted: #94a3b8; --accent: #5eead4; --accent-2: #60a5fa;
+        --accent-3: #a78bfa; --danger: #fb7185; --success: #34d399; --chosen: #facc15;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: Inter, "Segoe UI", Roboto, sans-serif; background: linear-gradient(135deg, var(--bg), #111827 65%); color: var(--text); }
+      button, input, select { font: inherit; }
+      button { border: 0; cursor: pointer; transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease; }
+      button:hover { transform: translateY(-1px); }
+      select { background: rgba(255,255,255,.06); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; }
+      .app-shell { height: 100vh; display: flex; flex-direction: column; padding: 14px 18px; gap: 10px; overflow: hidden; }
+      .hero-card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; backdrop-filter: blur(24px); box-shadow: 0 12px 36px rgba(2,6,23,.35); }
+      .hero-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 18px; flex-shrink: 0; flex-wrap: wrap; }
+      .eyebrow, .section-label { margin: 0 0 3px; text-transform: uppercase; letter-spacing: .24em; font-size: .68rem; color: var(--accent); }
+      h1 { margin: 0; font-size: 1.15rem; }
+      h2 { margin: 0; font-size: .95rem; }
+      .helper-text { margin: 4px 0 0; color: var(--muted); font-size: .78rem; }
+      .hero-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .control-card { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 10px; font-size: .82rem; }
+      .control-card input[type=range] { accent-color: var(--accent); width: 110px; }
+      .primary-btn, .secondary-btn { padding: 7px 11px; border-radius: 999px; color: var(--text); font-size: .82rem; background: rgba(255,255,255,.06); border: 1px solid var(--line); }
+      .primary-btn { background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #04111d; font-weight: 700; border: none; }
+      .nav-strip { display: flex; gap: 6px; flex-wrap: wrap; }
+      .nav-strip a { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); font-size: .76rem; text-decoration: none; color: var(--muted); }
+      .nav-strip a.current { color: #04111d; background: linear-gradient(135deg, var(--accent-2), var(--accent)); border-color: transparent; font-weight: 700; }
+      .dashboard-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+      .panel { padding: 12px 14px; display: flex; flex-direction: column; min-height: 0; gap: 10px; }
+      .panel-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-shrink: 0; }
+      .numberline { position: relative; height: 90px; margin-top: 20px; }
+      .nl-track { position: absolute; top: 40px; left: 0; right: 0; height: 4px; background: rgba(255,255,255,.12); border-radius: 4px; }
+      .nl-dot { position: absolute; top: 30px; width: 22px; height: 22px; border-radius: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; font-size: .62rem; font-weight: 800; color: #04111d; }
+      .nl-label { position: absolute; top: 0; font-size: .72rem; transform: translateX(-50%); color: var(--muted); white-space: nowrap; }
+      .order-banner { padding: 10px 12px; border-radius: 10px; text-align: center; font-weight: 700; font-size: .95rem; border: 1px solid var(--line); background: rgba(255,255,255,.04); }
+      .order-banner.ok { background: rgba(52,211,153,.16); border-color: rgba(52,211,153,.35); color: var(--success); }
+      .order-banner.bad { background: rgba(251,113,133,.14); border-color: rgba(251,113,133,.3); color: var(--danger); }
+      .stats-grid { display: flex; gap: 8px; }
+      .stat-tile { flex: 1; background: rgba(255,255,255,.05); border-radius: 12px; padding: 8px 10px; border: 1px solid var(--line); text-align: center; }
+      .stat-label { font-size: .68rem; color: var(--muted); margin-bottom: 3px; }
+      .stat-value { font-size: 1rem; font-weight: 700; }
+      canvas { width: 100%; height: 100%; display: block; border-radius: 12px; }
+      .canvas-wrap { flex: 1; min-height: 0; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--line); overflow: hidden; }
+      .scan-result { padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); font-size: .82rem; }
+      @media (max-width: 900px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+        html, body { height: auto; overflow: auto; }
+        .app-shell { height: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero-card">
+        <div>
+          <p class="eyebrow">Interactive Mathematics Lab</p>
+          <h1>IMO 2026 Problem 5</h1>
+          <p class="helper-text">√((x²+f(y)²)/2) ≥ (f(x)+y)/2 ≥ √(x·f(y)), for x, y &gt; 0.</p>
+        </div>
+        <div class="hero-controls">
+          <div class="control-card">
+            <span>Candidate f</span>
+            <select id="fSelect">
+              <option value="id">f(x) = x</option>
+              <option value="double">f(x) = 2x</option>
+              <option value="half">f(x) = x / 2</option>
+              <option value="sq">f(x) = x²</option>
+              <option value="sqrt">f(x) = √x</option>
+              <option value="const">f(x) = 3 (constant)</option>
+              <option value="power">f(x) = xᵖ (use slider)</option>
+            </select>
+          </div>
+          <div class="control-card" id="powerCard" style="display:none">
+            <span>p</span>
+            <input id="pInput" type="range" min="0.2" max="3" step="0.05" value="1" />
+            <strong id="pValue">1.00</strong>
+          </div>
+        </div>
+      </header>
+
+      <nav class="nav-strip">
+        <a href="../index.html">Hub</a>
+        <a href="../problem1/index.html">P1 · Blackboard</a>
+        <a href="../problem2/index.html">P2 · Circumcenter</a>
+        <a href="../problem3/index.html">P3 · Stick game</a>
+        <a href="../problem4/index.html">P4 · Triangle cuts</a>
+        <a href="../problem5/index.html" class="current">P5 · Sandwich ineq.</a>
+        <a href="../problem6/index.html">P6 · gcd sequence</a>
+      </nav>
+
+      <main class="dashboard-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Grid scan</p>
+              <h2>Where does the chain hold?</h2>
+            </div>
+            <div class="scan-result" id="scanResult">Scanning…</div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="heat" width="600" height="600"></canvas>
+          </div>
+          <p class="helper-text">Green = √((x²+f(y)²)/2) ≥ (f(x)+y)/2 ≥ √(x·f(y)) holds at that (x, y). Red = it fails somewhere in the chain.</p>
+        </section>
+
+        <section class="panel">
+          <div class="control-card">
+            <span>x</span>
+            <input id="xInput" type="range" min="0.1" max="10" step="0.05" value="2" />
+            <strong id="xValue">2.00</strong>
+          </div>
+          <div class="control-card">
+            <span>y</span>
+            <input id="yInput" type="range" min="0.1" max="10" step="0.05" value="3" />
+            <strong id="yValue">3.00</strong>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-tile"><div class="stat-label">Q = QM(x, f(y))</div><div class="stat-value" id="qVal">—</div></div>
+            <div class="stat-tile"><div class="stat-label">M = AM(f(x), y)</div><div class="stat-value" id="mVal">—</div></div>
+            <div class="stat-tile"><div class="stat-label">G = GM(x, f(y))</div><div class="stat-value" id="gVal">—</div></div>
+          </div>
+
+          <div class="numberline" id="numberline">
+            <div class="nl-track"></div>
+          </div>
+
+          <div class="order-banner" id="orderBanner">—</div>
+
+          <p class="helper-text">The chain Q ≥ M ≥ G is exactly quadratic-mean ≥ arithmetic-mean ≥ geometric-mean of (x, f(y)) whenever f(x) = x — try switching f and watch it break.</p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const fSelect = document.getElementById("fSelect");
+      const powerCard = document.getElementById("powerCard");
+      const pInput = document.getElementById("pInput");
+      const pValue = document.getElementById("pValue");
+      const xInput = document.getElementById("xInput");
+      const yInput = document.getElementById("yInput");
+      const xValue = document.getElementById("xValue");
+      const yValue = document.getElementById("yValue");
+      const qVal = document.getElementById("qVal");
+      const mVal = document.getElementById("mVal");
+      const gVal = document.getElementById("gVal");
+      const orderBanner = document.getElementById("orderBanner");
+      const numberline = document.getElementById("numberline");
+      const scanResult = document.getElementById("scanResult");
+      const heat = document.getElementById("heat");
+      const ctx = heat.getContext("2d");
+
+      function f(x) {
+        const mode = fSelect.value;
+        switch (mode) {
+          case "id": return x;
+          case "double": return 2 * x;
+          case "half": return x / 2;
+          case "sq": return x * x;
+          case "sqrt": return Math.sqrt(x);
+          case "const": return 3;
+          case "power": return Math.pow(x, Number(pInput.value));
+          default: return x;
+        }
+      }
+
+      function compute(x, y) {
+        const fy = f(y);
+        const fx = f(x);
+        const Q = Math.sqrt((x * x + fy * fy) / 2);
+        const M = (fx + y) / 2;
+        const G = Math.sqrt(Math.max(0, x * fy));
+        return { Q, M, G };
+      }
+
+      function updateSingle() {
+        const x = Number(xInput.value);
+        const y = Number(yInput.value);
+        xValue.textContent = x.toFixed(2);
+        yValue.textContent = y.toFixed(2);
+        const { Q, M, G } = compute(x, y);
+        qVal.textContent = Q.toFixed(3);
+        mVal.textContent = M.toFixed(3);
+        gVal.textContent = G.toFixed(3);
+
+        const holds = Q >= M - 1e-9 && M >= G - 1e-9;
+        orderBanner.textContent = holds ? `Q ≥ M ≥ G holds (${Q.toFixed(2)} ≥ ${M.toFixed(2)} ≥ ${G.toFixed(2)})` : `Chain broken: Q=${Q.toFixed(2)}, M=${M.toFixed(2)}, G=${G.toFixed(2)}`;
+        orderBanner.className = "order-banner " + (holds ? "ok" : "bad");
+
+        renderNumberline(Q, M, G);
+      }
+
+      function renderNumberline(Q, M, G) {
+        numberline.querySelectorAll(".nl-dot, .nl-label").forEach((n) => n.remove());
+        const vals = [
+          { key: "G", v: G, color: "#93c5fd" },
+          { key: "M", v: M, color: "#facc15" },
+          { key: "Q", v: Q, color: "#5eead4" },
+        ];
+        const min = Math.min(...vals.map((v) => v.v)) - 0.5;
+        const max = Math.max(...vals.map((v) => v.v)) + 0.5;
+        const span = Math.max(max - min, 0.001);
+        vals.forEach((item) => {
+          const pct = ((item.v - min) / span) * 100;
+          const dot = document.createElement("div");
+          dot.className = "nl-dot";
+          dot.style.left = `${pct}%`;
+          dot.style.background = item.color;
+          dot.textContent = item.key;
+          numberline.appendChild(dot);
+          const lbl = document.createElement("div");
+          lbl.className = "nl-label";
+          lbl.style.left = `${pct}%`;
+          lbl.textContent = item.v.toFixed(2);
+          numberline.appendChild(lbl);
+        });
+      }
+
+      function renderHeat() {
+        const N = 120;
+        const img = ctx.createImageData(N, N);
+        let okCount = 0;
+        for (let i = 0; i < N; i += 1) {
+          const x = 0.1 + (i / (N - 1)) * 9.9;
+          for (let j = 0; j < N; j += 1) {
+            const y = 0.1 + (j / (N - 1)) * 9.9;
+            const { Q, M, G } = compute(x, y);
+            const holds = Q >= M - 1e-6 && M >= G - 1e-6;
+            if (holds) okCount += 1;
+            const idx = ((N - 1 - j) * N + i) * 4;
+            if (holds) {
+              img.data[idx] = 52; img.data[idx + 1] = 211; img.data[idx + 2] = 153; img.data[idx + 3] = 200;
+            } else {
+              img.data[idx] = 251; img.data[idx + 1] = 113; img.data[idx + 2] = 133; img.data[idx + 3] = 200;
+            }
+          }
+        }
+        const off = document.createElement("canvas");
+        off.width = N; off.height = N;
+        off.getContext("2d").putImageData(img, 0, 0);
+        ctx.clearRect(0, 0, heat.width, heat.height);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(off, 0, 0, heat.width, heat.height);
+        const pct = ((okCount / (N * N)) * 100).toFixed(1);
+        scanResult.textContent = `${pct}% of the sampled (x, y) grid satisfies the full chain.`;
+      }
+
+      function fullRender() {
+        powerCard.style.display = fSelect.value === "power" ? "flex" : "none";
+        updateSingle();
+        renderHeat();
+      }
+
+      fSelect.addEventListener("change", fullRender);
+      pInput.addEventListener("input", () => { pValue.textContent = Number(pInput.value).toFixed(2); fullRender(); });
+      xInput.addEventListener("input", updateSingle);
+      yInput.addEventListener("input", updateSingle);
+      xInput.addEventListener("change", renderHeat);
+      yInput.addEventListener("change", renderHeat);
+
+      fullRender();
+    </script>
+  </body>
+</html>

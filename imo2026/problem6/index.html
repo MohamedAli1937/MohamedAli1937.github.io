@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IMO 2026 Problem 6 Visualizer</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #060816; --panel: rgba(12,18,36,.78); --line: rgba(255,255,255,.12);
+        --text: #f8fafc; --muted: #94a3b8; --accent: #5eead4; --accent-2: #60a5fa;
+        --accent-3: #a78bfa; --danger: #fb7185; --success: #34d399; --chosen: #facc15;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: Inter, "Segoe UI", Roboto, sans-serif; background: linear-gradient(135deg, var(--bg), #111827 65%); color: var(--text); }
+      button, input { font: inherit; }
+      button { border: 0; cursor: pointer; transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease; }
+      button:hover { transform: translateY(-1px); }
+      .app-shell { height: 100vh; display: flex; flex-direction: column; padding: 14px 18px; gap: 10px; overflow: hidden; }
+      .hero-card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; backdrop-filter: blur(24px); box-shadow: 0 12px 36px rgba(2,6,23,.35); }
+      .hero-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 18px; flex-shrink: 0; flex-wrap: wrap; }
+      .eyebrow, .section-label { margin: 0 0 3px; text-transform: uppercase; letter-spacing: .24em; font-size: .68rem; color: var(--accent); }
+      h1 { margin: 0; font-size: 1.15rem; }
+      h2 { margin: 0; font-size: .95rem; }
+      .helper-text { margin: 4px 0 0; color: var(--muted); font-size: .78rem; }
+      .hero-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .control-card { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 10px; font-size: .82rem; }
+      .control-card input { accent-color: var(--accent); width: 90px; }
+      .control-card input[type="number"] { width: 60px; border-radius: 6px; border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--text); padding: 4px 6px; }
+      .primary-btn, .secondary-btn { padding: 7px 11px; border-radius: 999px; color: var(--text); font-size: .82rem; }
+      .primary-btn { background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #04111d; font-weight: 700; }
+      .secondary-btn { background: rgba(255,255,255,.06); border: 1px solid var(--line); }
+      .nav-strip { display: flex; gap: 6px; flex-wrap: wrap; }
+      .nav-strip a { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); font-size: .76rem; text-decoration: none; color: var(--muted); }
+      .nav-strip a.current { color: #04111d; background: linear-gradient(135deg, var(--accent-2), var(--accent)); border-color: transparent; font-weight: 700; }
+      .dashboard-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+      .panel { padding: 12px 14px; display: flex; flex-direction: column; min-height: 0; gap: 8px; }
+      .panel-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-shrink: 0; }
+      .chart-wrap { flex: 1; min-height: 0; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--line); overflow: hidden; }
+      canvas { width: 100%; height: 100%; display: block; }
+      .seq-scroll { flex: 1; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+      .term-chip { min-width: 58px; padding: 6px 8px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--line); text-align: center; font-size: .76rem; }
+      .term-chip .idx { color: var(--muted); font-size: .64rem; display: block; }
+      .term-chip.period { border-color: rgba(94,234,212,.5); background: rgba(94,234,212,.12); }
+      .stats-grid { display: flex; gap: 8px; }
+      .stat-tile { flex: 1; background: rgba(255,255,255,.05); border-radius: 12px; padding: 8px 10px; border: 1px solid var(--line); text-align: center; }
+      .stat-tile.m-result { background: linear-gradient(135deg, rgba(94,234,212,.12), rgba(96,165,250,.1)); border-color: rgba(94,234,212,.28); }
+      .stat-label { font-size: .68rem; color: var(--muted); margin-bottom: 3px; }
+      .stat-value { font-size: 1rem; font-weight: 700; }
+      .stat-value.accent { color: var(--accent); }
+      @media (max-width: 900px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+        html, body { height: auto; overflow: auto; }
+        .app-shell { height: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero-card">
+        <div>
+          <p class="eyebrow">Interactive Mathematics Lab</p>
+          <h1>IMO 2026 Problem 6</h1>
+          <p class="helper-text">a₍n+1₎ is the smallest integer above aₙ sharing a factor with every earlier term.</p>
+        </div>
+        <div class="hero-controls">
+          <label class="control-card">
+            <span>a₁</span>
+            <input id="a1Input" type="number" min="2" max="9999" value="2" />
+          </label>
+          <label class="control-card">
+            <span>Terms</span>
+            <input id="countInput" type="range" min="8" max="45" value="24" />
+            <strong id="countValue">24</strong>
+          </label>
+          <button id="genBtn" class="primary-btn">Generate</button>
+        </div>
+      </header>
+
+      <nav class="nav-strip">
+        <a href="../index.html">Hub</a>
+        <a href="../problem1/index.html">P1 · Blackboard</a>
+        <a href="../problem2/index.html">P2 · Circumcenter</a>
+        <a href="../problem3/index.html">P3 · Stick game</a>
+        <a href="../problem4/index.html">P4 · Triangle cuts</a>
+        <a href="../problem5/index.html">P5 · Sandwich ineq.</a>
+        <a href="../problem6/index.html" class="current">P6 · gcd sequence</a>
+      </nav>
+
+      <main class="dashboard-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Growth</p>
+              <h2>aₙ vs n</h2>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chart" width="700" height="360"></canvas>
+          </div>
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Sequence</p>
+              <h2>Terms</h2>
+            </div>
+          </div>
+          <div class="seq-scroll" id="seqScroll"></div>
+        </section>
+
+        <section class="panel">
+          <div class="stats-grid">
+            <div class="stat-tile"><div class="stat-label">Period T</div><div class="stat-value accent" id="tVal">—</div></div>
+            <div class="stat-tile"><div class="stat-label">Increment L</div><div class="stat-value accent" id="lVal">—</div></div>
+          </div>
+          <div class="stat-tile m-result"><div class="stat-label">Meaning</div><div class="stat-value" id="meaning" style="font-size:.82rem; font-weight:500">Generate a sequence to detect a repeating block.</div></div>
+
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Differences</p>
+              <h2>dₙ = a₍n+1₎ − aₙ</h2>
+            </div>
+          </div>
+          <div class="seq-scroll" id="diffScroll" style="max-height:160px"></div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const a1Input = document.getElementById("a1Input");
+      const countInput = document.getElementById("countInput");
+      const countValue = document.getElementById("countValue");
+      const genBtn = document.getElementById("genBtn");
+      const seqScroll = document.getElementById("seqScroll");
+      const diffScroll = document.getElementById("diffScroll");
+      const tVal = document.getElementById("tVal");
+      const lVal = document.getElementById("lVal");
+      const meaning = document.getElementById("meaning");
+      const chart = document.getElementById("chart");
+      const ctx = chart.getContext("2d");
+
+      function gcd(a, b) {
+        let x = a, y = b;
+        while (y) { const t = y; y = x % y; x = t; }
+        return x;
+      }
+
+      function generateSequence(a1, count) {
+        const seq = [a1];
+        const SEARCH_CAP = 20000;
+        for (let n = 1; n < count; n += 1) {
+          const prev = seq;
+          let m = seq[seq.length - 1] + 1;
+          let found = null;
+          const limit = seq[seq.length - 1] + SEARCH_CAP;
+          while (m <= limit) {
+            let ok = true;
+            for (let i = 0; i < prev.length; i += 1) {
+              if (gcd(m, prev[i]) === 1) { ok = false; break; }
+            }
+            if (ok) { found = m; break; }
+            m += 1;
+          }
+          if (found === null) break;
+          seq.push(found);
+        }
+        return seq;
+      }
+
+      function detectPeriod(diffs) {
+        const maxT = Math.min(12, Math.floor(diffs.length / 3));
+        for (let T = 1; T <= maxT; T += 1) {
+          let matches = true;
+          const repeatsAvailable = Math.floor(diffs.length / T) - 1;
+          if (repeatsAvailable < 1) continue;
+          const tailStart = diffs.length - T * (repeatsAvailable + 1);
+          for (let n = Math.max(0, tailStart); n + T < diffs.length; n += 1) {
+            if (diffs[n] !== diffs[n + T]) { matches = false; break; }
+          }
+          if (matches) {
+            const L = diffs.slice(diffs.length - T).reduce((s, d) => s + d, 0);
+            return { T, L, startIdx: Math.max(0, tailStart) };
+          }
+        }
+        return null;
+      }
+
+      function renderChart(seq) {
+        const w = chart.width, h = chart.height;
+        ctx.clearRect(0, 0, w, h);
+        const pad = 36;
+        const maxV = Math.max(...seq);
+        const minV = Math.min(...seq);
+        ctx.strokeStyle = "rgba(255,255,255,0.12)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad, h - pad);
+        ctx.lineTo(w - 10, h - pad);
+        ctx.moveTo(pad, h - pad);
+        ctx.lineTo(pad, 10);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#5eead4";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        seq.forEach((v, i) => {
+          const x = pad + (i / (seq.length - 1 || 1)) * (w - pad - 20);
+          const y = h - pad - ((v - minV) / (maxV - minV || 1)) * (h - pad - 20);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        seq.forEach((v, i) => {
+          const x = pad + (i / (seq.length - 1 || 1)) * (w - pad - 20);
+          const y = h - pad - ((v - minV) / (maxV - minV || 1)) * (h - pad - 20);
+          ctx.fillStyle = "#60a5fa";
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "11px Inter, sans-serif";
+        ctx.fillText(String(minV), 4, h - pad + 4);
+        ctx.fillText(String(maxV), 4, 16);
+      }
+
+      function generate() {
+        const a1 = Math.max(2, Math.floor(Number(a1Input.value) || 2));
+        const count = Number(countInput.value);
+        countValue.textContent = count;
+        const seq = generateSequence(a1, count);
+        const diffs = [];
+        for (let i = 0; i < seq.length - 1; i += 1) diffs.push(seq[i + 1] - seq[i]);
+        const period = detectPeriod(diffs);
+
+        renderChart(seq);
+
+        seqScroll.innerHTML = seq
+          .map((v, i) => {
+            const inPeriod = period && i >= period.startIdx;
+            return `<div class="term-chip ${inPeriod ? "period" : ""}"><span class="idx">a${i + 1}</span>${v}</div>`;
+          })
+          .join("");
+
+        diffScroll.innerHTML = diffs
+          .map((d, i) => {
+            const inPeriod = period && i >= period.startIdx;
+            return `<div class="term-chip ${inPeriod ? "period" : ""}"><span class="idx">d${i + 1}</span>${d}</div>`;
+          })
+          .join("");
+
+        if (period) {
+          tVal.textContent = period.T;
+          lVal.textContent = period.L;
+          meaning.textContent = `From around n = ${period.startIdx + 1}, the pattern of gaps repeats every T = ${period.T} steps, adding L = ${period.L} each cycle — consistent with a₍n+T₎ = aₙ + L.`;
+        } else {
+          tVal.textContent = "—";
+          lVal.textContent = "—";
+          meaning.textContent = seq.length < count
+            ? "Search cap reached before the next term was found — try a smaller a₁ or fewer terms."
+            : "No short repeating block detected yet in this many terms — try generating more terms.";
+        }
+      }
+
+      countInput.addEventListener("input", () => { countValue.textContent = countInput.value; });
+      genBtn.addEventListener("click", generate);
+      a1Input.addEventListener("keydown", (e) => { if (e.key === "Enter") generate(); });
+
+      generate();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IMO 2026 Problem 3 Visualizer</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #060816; --panel: rgba(12,18,36,.78); --line: rgba(255,255,255,.12);
+        --text: #f8fafc; --muted: #94a3b8; --accent: #5eead4; --accent-2: #60a5fa;
+        --accent-3: #a78bfa; --danger: #fb7185; --success: #34d399; --chosen: #facc15;
+        --liu: #f0abfc; --xiang: #93c5fd;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: Inter, "Segoe UI", Roboto, sans-serif; background: linear-gradient(135deg, var(--bg), #111827 65%); color: var(--text); }
+      button, input { font: inherit; }
+      button { border: 0; cursor: pointer; transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease; }
+      button:hover { transform: translateY(-1px); }
+      button:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+      .app-shell { height: 100vh; display: flex; flex-direction: column; padding: 14px 18px; gap: 10px; overflow: hidden; }
+      .hero-card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; backdrop-filter: blur(24px); box-shadow: 0 12px 36px rgba(2,6,23,.35); }
+      .hero-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 18px; flex-shrink: 0; flex-wrap: wrap; }
+      .eyebrow, .section-label { margin: 0 0 3px; text-transform: uppercase; letter-spacing: .24em; font-size: .68rem; color: var(--accent); }
+      h1 { margin: 0; font-size: 1.15rem; }
+      h2 { margin: 0; font-size: .95rem; }
+      .helper-text { margin: 4px 0 0; color: var(--muted); font-size: .78rem; }
+      .hero-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .control-card { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 10px; font-size: .82rem; }
+      .control-card input { accent-color: var(--accent); width: 90px; }
+      .primary-btn, .secondary-btn { padding: 7px 11px; border-radius: 999px; color: var(--text); font-size: .82rem; }
+      .primary-btn { background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #04111d; font-weight: 700; }
+      .secondary-btn { background: rgba(255,255,255,.06); border: 1px solid var(--line); }
+      .nav-strip { display: flex; gap: 6px; flex-wrap: wrap; }
+      .nav-strip a { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); font-size: .76rem; text-decoration: none; color: var(--muted); }
+      .nav-strip a.current { color: #04111d; background: linear-gradient(135deg, var(--accent-2), var(--accent)); border-color: transparent; font-weight: 700; }
+      .dashboard-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+      .panel { padding: 12px 14px; display: flex; flex-direction: column; min-height: 0; gap: 10px; }
+      .panel-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-shrink: 0; }
+      .legend { display: flex; gap: 6px; flex-wrap: wrap; }
+      .legend-pill { padding: 3px 7px; border-radius: 999px; font-size: .7rem; background: rgba(255,255,255,.06); }
+      .phase-banner { padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--line); font-size: .85rem; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .stick-wrap { flex: 1; min-height: 90px; display: flex; align-items: center; }
+      .stick { position: relative; width: 100%; height: 56px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); cursor: crosshair; overflow: hidden; }
+      .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--liu); }
+      .mark.xiang { background: var(--xiang); }
+      .mark-label { position: absolute; top: -18px; transform: translateX(-50%); font-size: .68rem; color: var(--muted); }
+      .piece { position: absolute; top: 0; bottom: 0; border-right: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; font-size: .68rem; color: rgba(255,255,255,.55); transition: background 300ms ease; }
+      .piece.claimed-liu { background: rgba(240,171,252,.28); color: #fdf4ff; }
+      .piece.claimed-xiang { background: rgba(147,197,253,.28); color: #eff6ff; }
+      .piece.claiming { animation: pulse .5s ease infinite alternate; }
+      @keyframes pulse { from { filter: brightness(1); } to { filter: brightness(1.5); } }
+      .stats-grid { display: flex; gap: 8px; flex-shrink: 0; }
+      .stat-tile { flex: 1; background: rgba(255,255,255,.05); border-radius: 12px; padding: 10px; border: 1px solid var(--line); text-align: center; }
+      .stat-tile.liu { border-color: rgba(240,171,252,.35); }
+      .stat-tile.xiang { border-color: rgba(147,197,253,.35); }
+      .stat-label { font-size: .72rem; color: var(--muted); margin-bottom: 4px; }
+      .stat-value { font-size: 1.05rem; font-weight: 700; }
+      .bar-compare { display: flex; height: 26px; border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+      .bar-liu { background: linear-gradient(135deg, #f0abfc, #d946ef); display: flex; align-items: center; justify-content: center; font-size: .74rem; color: #2e0640; font-weight: 700; }
+      .bar-xiang { background: linear-gradient(135deg, #93c5fd, #60a5fa); display: flex; align-items: center; justify-content: center; font-size: .74rem; color: #05203d; font-weight: 700; }
+      .log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; font-size: .78rem; }
+      .log-row { padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
+      .controls-inline { display: flex; gap: 8px; flex-wrap: wrap; }
+      @media (max-width: 900px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+        html, body { height: auto; overflow: auto; }
+        .app-shell { height: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero-card">
+        <div>
+          <p class="eyebrow">Interactive Mathematics Lab</p>
+          <h1>IMO 2026 Problem 3</h1>
+          <p class="helper-text">Liu Bang marks points, Xiang Yu marks points, then they alternate claiming pieces.</p>
+        </div>
+        <div class="hero-controls">
+          <label class="control-card" for="nInput">
+            <span>n</span>
+            <input id="nInput" type="range" min="1" max="8" value="3" />
+            <strong id="nValue">3</strong>
+          </label>
+          <button id="resetBtn" class="secondary-btn">Reset</button>
+        </div>
+      </header>
+
+      <nav class="nav-strip">
+        <a href="../index.html">Hub</a>
+        <a href="../problem1/index.html">P1 · Blackboard</a>
+        <a href="../problem2/index.html">P2 · Circumcenter</a>
+        <a href="../problem3/index.html" class="current">P3 · Stick game</a>
+        <a href="../problem4/index.html">P4 · Triangle cuts</a>
+        <a href="../problem5/index.html">P5 · Sandwich ineq.</a>
+        <a href="../problem6/index.html">P6 · gcd sequence</a>
+      </nav>
+
+      <main class="dashboard-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">The stick</p>
+              <h2>Marking &amp; claiming</h2>
+            </div>
+            <div class="legend">
+              <span class="legend-pill" style="color:#f0abfc">Liu Bang marks</span>
+              <span class="legend-pill" style="color:#93c5fd">Xiang Yu marks</span>
+            </div>
+          </div>
+
+          <div class="phase-banner">
+            <span id="phaseText">Click the stick to place Liu Bang's marks (0 / 3).</span>
+            <div class="controls-inline">
+              <button id="randomMarksBtn" class="secondary-btn">Random marks</button>
+              <button id="undoMarkBtn" class="secondary-btn">Undo last mark</button>
+            </div>
+          </div>
+
+          <div class="stick-wrap">
+            <div class="stick" id="stick"></div>
+          </div>
+
+          <div class="controls-inline">
+            <button id="simulateBtn" class="primary-btn" disabled>Simulate claiming</button>
+            <button id="stepBtn" class="secondary-btn" disabled>Step</button>
+            <button id="autoClaimBtn" class="secondary-btn" disabled>Auto-claim</button>
+          </div>
+          <p class="helper-text">Claiming heuristic: on each turn the current player takes whichever unclaimed piece is currently largest — a simple illustrative strategy, not a proof of optimal play.</p>
+        </section>
+
+        <section class="panel">
+          <div class="stats-grid">
+            <div class="stat-tile liu"><div class="stat-label">Liu Bang total</div><div class="stat-value" id="liuTotal">0.000</div></div>
+            <div class="stat-tile xiang"><div class="stat-label">Xiang Yu total</div><div class="stat-value" id="xiangTotal">0.000</div></div>
+          </div>
+          <div class="bar-compare" id="barCompare">
+            <div class="bar-liu" id="barLiu" style="width:50%">Liu</div>
+            <div class="bar-xiang" id="barXiang" style="width:50%">Xiang</div>
+          </div>
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Claim log</p>
+              <h2>Turn-by-turn</h2>
+            </div>
+          </div>
+          <div class="log" id="log"></div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const nInput = document.getElementById("nInput");
+      const nValue = document.getElementById("nValue");
+      const stick = document.getElementById("stick");
+      const phaseText = document.getElementById("phaseText");
+      const simulateBtn = document.getElementById("simulateBtn");
+      const stepBtn = document.getElementById("stepBtn");
+      const autoClaimBtn = document.getElementById("autoClaimBtn");
+      const liuTotalEl = document.getElementById("liuTotal");
+      const xiangTotalEl = document.getElementById("xiangTotal");
+      const barLiu = document.getElementById("barLiu");
+      const barXiang = document.getElementById("barXiang");
+      const logEl = document.getElementById("log");
+
+      const state = {
+        n: 3,
+        phase: "liu", // liu | xiang | ready | claiming | done
+        liuMarks: [],
+        xiangMarks: [],
+        pieces: [], // {start,end,owner:null|'liu'|'xiang'}
+        claimOrder: [],
+        claimIndex: 0,
+        autoTimer: null,
+      };
+
+      function updateN() {
+        state.n = Number(nInput.value);
+        nValue.textContent = state.n;
+        resetAll();
+      }
+
+      function resetAll() {
+        if (state.autoTimer) { clearInterval(state.autoTimer); state.autoTimer = null; }
+        state.phase = "liu";
+        state.liuMarks = [];
+        state.xiangMarks = [];
+        state.pieces = [];
+        state.claimOrder = [];
+        state.claimIndex = 0;
+        simulateBtn.disabled = true;
+        stepBtn.disabled = true;
+        autoClaimBtn.disabled = true;
+        logEl.innerHTML = "";
+        liuTotalEl.textContent = "0.000";
+        xiangTotalEl.textContent = "0.000";
+        barLiu.style.width = "50%";
+        barXiang.style.width = "50%";
+        renderStick();
+        updatePhaseText();
+      }
+
+      function updatePhaseText() {
+        if (state.phase === "liu") {
+          phaseText.textContent = `Click the stick to place Liu Bang's marks (${state.liuMarks.length} / ${state.n}).`;
+        } else if (state.phase === "xiang") {
+          phaseText.textContent = `Click the stick to place Xiang Yu's marks (${state.xiangMarks.length} / ${state.n}).`;
+        } else if (state.phase === "ready") {
+          phaseText.textContent = `Marks locked in. Press "Simulate claiming" to watch the pieces get claimed.`;
+        } else if (state.phase === "claiming") {
+          phaseText.textContent = `Claiming in progress — turn ${state.claimIndex + 1} of ${state.pieces.length}.`;
+        } else if (state.phase === "done") {
+          phaseText.textContent = `All pieces claimed.`;
+        }
+      }
+
+      function handleStickClick(e) {
+        if (state.phase !== "liu" && state.phase !== "xiang") return;
+        const rect = stick.getBoundingClientRect();
+        let t = (e.clientX - rect.left) / rect.width;
+        t = Math.max(0.02, Math.min(0.98, t));
+        if (state.phase === "liu") {
+          if (state.liuMarks.length >= state.n) return;
+          state.liuMarks.push(t);
+          if (state.liuMarks.length >= state.n) state.phase = "xiang";
+        } else {
+          if (state.xiangMarks.length >= state.n) return;
+          state.xiangMarks.push(t);
+          if (state.xiangMarks.length >= state.n) finalizeMarks();
+        }
+        renderStick();
+        updatePhaseText();
+      }
+
+      function finalizeMarks() {
+        state.phase = "ready";
+        buildPieces();
+        simulateBtn.disabled = false;
+      }
+
+      function buildPieces() {
+        const cuts = Array.from(new Set([0, 1, ...state.liuMarks, ...state.xiangMarks])).sort((a, b) => a - b);
+        state.pieces = [];
+        for (let i = 0; i < cuts.length - 1; i += 1) {
+          state.pieces.push({ start: cuts[i], end: cuts[i + 1], owner: null, length: cuts[i + 1] - cuts[i] });
+        }
+      }
+
+      function randomMarks() {
+        resetAll();
+        state.liuMarks = Array.from({ length: state.n }, () => 0.02 + Math.random() * 0.96).sort((a, b) => a - b);
+        state.xiangMarks = Array.from({ length: state.n }, () => 0.02 + Math.random() * 0.96).sort((a, b) => a - b);
+        finalizeMarks();
+        renderStick();
+        updatePhaseText();
+      }
+
+      function undoMark() {
+        if (state.phase === "xiang" && state.xiangMarks.length > 0) {
+          state.xiangMarks.pop();
+        } else if (state.phase === "liu" && state.liuMarks.length > 0) {
+          state.liuMarks.pop();
+        } else if (state.phase === "xiang" && state.xiangMarks.length === 0) {
+          state.phase = "liu";
+          if (state.liuMarks.length > 0) state.liuMarks.pop();
+        }
+        renderStick();
+        updatePhaseText();
+      }
+
+      function renderStick() {
+        stick.innerHTML = "";
+        if (state.pieces.length && (state.phase === "ready" || state.phase === "claiming" || state.phase === "done")) {
+          state.pieces.forEach((piece, idx) => {
+            const div = document.createElement("div");
+            div.className = "piece";
+            if (piece.owner === "liu") div.classList.add("claimed-liu");
+            if (piece.owner === "xiang") div.classList.add("claimed-xiang");
+            if (state.phase === "claiming" && state.claimOrder[state.claimIndex] === idx) div.classList.add("claiming");
+            div.style.left = `${piece.start * 100}%`;
+            div.style.width = `${(piece.end - piece.start) * 100}%`;
+            div.textContent = piece.length > 0.05 ? piece.length.toFixed(2) : "";
+            stick.appendChild(div);
+          });
+        }
+        state.liuMarks.forEach((t) => {
+          const m = document.createElement("div");
+          m.className = "mark";
+          m.style.left = `${t * 100}%`;
+          stick.appendChild(m);
+        });
+        state.xiangMarks.forEach((t) => {
+          const m = document.createElement("div");
+          m.className = "mark xiang";
+          m.style.left = `${t * 100}%`;
+          stick.appendChild(m);
+        });
+      }
+
+      function startSimulation() {
+        state.claimOrder = state.pieces
+          .map((_, idx) => idx)
+          .sort((a, b) => 0); // order decided dynamically during claiming
+        state.claimIndex = 0;
+        state.phase = "claiming";
+        stepBtn.disabled = false;
+        autoClaimBtn.disabled = false;
+        simulateBtn.disabled = true;
+        updatePhaseText();
+        renderStick();
+      }
+
+      function claimNext() {
+        const unclaimed = state.pieces.map((p, idx) => ({ p, idx })).filter((x) => x.p.owner === null);
+        if (unclaimed.length === 0) {
+          state.phase = "done";
+          if (state.autoTimer) { clearInterval(state.autoTimer); state.autoTimer = null; }
+          stepBtn.disabled = true;
+          autoClaimBtn.disabled = true;
+          updatePhaseText();
+          renderStick();
+          return false;
+        }
+        unclaimed.sort((a, b) => b.p.length - a.p.length);
+        const chosen = unclaimed[0];
+        const turnNumber = state.pieces.length - unclaimed.length; // 0-indexed turn
+        const isLiuTurn = turnNumber % 2 === 0; // Liu Bang goes first
+        chosen.p.owner = isLiuTurn ? "liu" : "xiang";
+
+        recomputeTotals();
+        logRow(isLiuTurn, chosen.p);
+        state.claimIndex += 1;
+        renderStick();
+        updatePhaseText();
+        return true;
+      }
+
+      function logRow(isLiuTurn, piece) {
+        const row = document.createElement("div");
+        row.className = "log-row";
+        row.innerHTML = `<strong style="color:${isLiuTurn ? "#f0abfc" : "#93c5fd"}">${isLiuTurn ? "Liu Bang" : "Xiang Yu"}</strong> claims piece [${piece.start.toFixed(2)}, ${piece.end.toFixed(2)}] — length ${piece.length.toFixed(3)}`;
+        logEl.prepend(row);
+      }
+
+      function recomputeTotals() {
+        const liuTotal = state.pieces.filter((p) => p.owner === "liu").reduce((s, p) => s + p.length, 0);
+        const xiangTotal = state.pieces.filter((p) => p.owner === "xiang").reduce((s, p) => s + p.length, 0);
+        liuTotalEl.textContent = liuTotal.toFixed(3);
+        xiangTotalEl.textContent = xiangTotal.toFixed(3);
+        const total = liuTotal + xiangTotal;
+        const liuPct = total > 0 ? (liuTotal / (liuTotal + xiangTotal + (1 - total))) : 0.5;
+        barLiu.style.width = `${Math.max(4, liuTotal * 100)}%`;
+        barXiang.style.width = `${Math.max(4, xiangTotal * 100)}%`;
+      }
+
+      function autoClaim() {
+        if (state.autoTimer) return;
+        state.autoTimer = setInterval(() => {
+          const moved = claimNext();
+          if (!moved) {
+            clearInterval(state.autoTimer);
+            state.autoTimer = null;
+          }
+        }, 550);
+      }
+
+      nInput.addEventListener("input", updateN);
+      stick.addEventListener("click", handleStickClick);
+      document.getElementById("resetBtn").addEventListener("click", resetAll);
+      document.getElementById("randomMarksBtn").addEventListener("click", randomMarks);
+      document.getElementById("undoMarkBtn").addEventListener("click", undoMark);
+      simulateBtn.addEventListener("click", startSimulation);
+      stepBtn.addEventListener("click", claimNext);
+      autoClaimBtn.addEventListener("click", autoClaim);
+
+      resetAll();
+    </script>
+  </body>
+</html>
