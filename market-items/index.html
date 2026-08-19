@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Market Management Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --bg: #0f172a;
+        --card-bg: rgba(30, 41, 59, 0.7);
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --border: rgba(255, 255, 255, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Outfit", sans-serif;
+        background-color: var(--bg);
+        background-image:
+          radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+          radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 2rem;
+        line-height: 1.5;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 3rem;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(to right, #fff, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+      }
+
+      .stat-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border);
+        padding: 1.5rem;
+        border-radius: 1.5rem;
+        transition:
+          transform 0.3s ease,
+          border-color 0.3s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--primary);
+      }
+
+      .stat-label {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-top: 0.5rem;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      button:hover {
+        background: var(--primary-dark);
+        transform: scale(1.02);
+      }
+
+      button.outline {
+        background: transparent;
+        border: 1px solid var(--border);
+      }
+
+      button.outline:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      button.danger {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+      }
+
+      button.danger:hover {
+        background: var(--danger);
+        color: white;
+      }
+
+      .table-container {
+        background: var(--card-bg);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border);
+        border-radius: 1.5rem;
+        overflow: hidden;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      th {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 1rem 1.5rem;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        border-bottom: 1px solid var(--border);
+      }
+
+      td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.9375rem;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
+      .badge-valid {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+      }
+      .badge-warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+      }
+      .badge-danger {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+        z-index: 100;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-content {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        padding: 2rem;
+        border-radius: 1.5rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      pre {
+        background: #1e293b;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        overflow-x: auto;
+        margin-top: 1rem;
+        font-family: monospace;
+        font-size: 0.875rem;
+      }
+
+      .filter-bar {
+        background: var(--card-bg);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border);
+        border-radius: 1.5rem;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        margin: 1.5rem 0 2rem 0;
+        width: 100%;
+        transition: all 0.3s ease;
+      }
+
+      .filter-bar:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.15);
+      }
+
+      .search-icon {
+        color: var(--primary);
+        margin-right: 1.25rem;
+        font-size: 1.4rem;
+        opacity: 0.9;
+        transition: transform 0.3s ease;
+      }
+
+      .filter-bar:focus-within .search-icon {
+        transform: scale(1.1);
+      }
+
+      #searchName {
+        background: transparent;
+        border: none;
+        flex-grow: 1;
+        font-size: 1.15rem;
+        color: var(--text);
+        outline: none;
+        font-family: inherit;
+        font-weight: 400;
+      }
+
+      #searchName::placeholder {
+        color: var(--text-muted);
+        opacity: 0.6;
+      }
+
+      .filter-separator {
+        width: 1px;
+        height: 32px;
+        background: var(--border);
+        margin: 0 1.5rem;
+      }
+
+      #searchStatus {
+        background: transparent;
+        border: none;
+        color: var(--text);
+        font-weight: 600;
+        padding-right: 2rem;
+        cursor: pointer;
+        outline: none;
+        appearance: none;
+        font-family: inherit;
+        font-size: 1rem;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right center;
+        background-size: 1.25rem;
+      }
+
+      #searchStatus option {
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .action-btn {
+        padding: 0.4rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 1.1rem;
+        line-height: 1;
+        background: transparent;
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
+      }
+
+      .edit-btn:hover {
+        color: var(--warning);
+        border-color: var(--warning);
+        background: rgba(245, 158, 11, 0.1);
+      }
+      .delete-btn:hover {
+        color: var(--danger);
+        border-color: var(--danger);
+        background: rgba(239, 68, 68, 0.1);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div>
+          <p style="color: var(--primary); font-weight: 600; margin-bottom: 0.5rem">Supermarket API</p>
+          <h1>Management Dashboard</h1>
+        </div>
+        <div style="display: flex; gap: 1rem">
+          <button onclick="openAddModal()" style="background: var(--success)" title="Endpoint: POST /api/items">
+            + Add New Item
+          </button>
+          <button onclick="resetData()" title="Endpoint: POST /api/items/reset">Reset & Refresh</button>
+        </div>
+      </header>
+
+      <div class="filter-bar" title="Endpoint: GET /api/items?name={val}&status={val}">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchName" placeholder="Search by product name..." oninput="fetchItems()" />
+        <div class="filter-separator"></div>
+        <select id="searchStatus" onchange="fetchItems()">
+          <option value="">All Statuses</option>
+          <option value="VALID">Valid</option>
+          <option value="EXPIRING_SOON">Expiring Soon</option>
+          <option value="EXPIRED">Expired</option>
+        </select>
+      </div>
+
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card" title="Endpoint: GET /api/items/analytics">
+          <div class="stat-label">Total Products</div>
+          <div class="stat-value" id="totalProducts">--</div>
+        </div>
+        <div class="stat-card" title="Endpoint: GET /api/items?status=EXPIRED">
+          <div class="stat-label">Expired</div>
+          <div class="stat-value" id="expiredProducts" style="color: var(--danger)">--</div>
+        </div>
+        <div class="stat-card" id="soonCard" title="Endpoint: GET /api/items?status=EXPIRING_SOON">
+          <div class="stat-label">Expiring Soon</div>
+          <div class="stat-value" id="expiringSoonProducts" style="color: var(--warning)">--</div>
+        </div>
+        <div class="stat-card" title="Endpoint: GET /api/items/low-stock">
+          <div class="stat-label">Low Stock</div>
+          <div class="stat-value" id="lowStockProducts" style="color: var(--warning)">--</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button
+          class="outline"
+          onclick="fetchEndpoint('/api/items/analytics', 'Global Analytics (KPIs)')"
+          title="Endpoint: GET /api/items/analytics"
+        >
+          📈 Global Analytics
+        </button>
+        <button
+          class="outline"
+          onclick="fetchEndpoint('/api/items/low-stock', 'Low Stock Items')"
+          title="Endpoint: GET /api/items/low-stock"
+        >
+          ⚠️ Low Stock
+        </button>
+        <button
+          class="outline"
+          onclick="fetchEndpoint('/api/items/restock-suggestions', 'Restock Suggestions')"
+          title="Endpoint: GET /api/items/restock-suggestions"
+        >
+          📦 Restock Suggestions
+        </button>
+        <button class="outline" onclick="openBulkModal()" title="Endpoint: POST /api/items/bulk">📤 Bulk Import</button>
+        <button
+          class="outline"
+          onclick="fetchEndpoint('/api/items/analytics/risk', 'Financial Risk Analysis')"
+          title="Endpoint: GET /api/items/analytics/risk"
+        >
+          💰 Financial Risk
+        </button>
+        <button
+          class="outline"
+          onclick="fetchEndpoint('/api/items/analytics/distribution', 'Category Distribution')"
+          title="Endpoint: GET /api/items/analytics/distribution"
+        >
+          📊 Distribution
+        </button>
+        <button
+          class="outline"
+          onclick="window.open((window.API_BASE || 'http://localhost:8080') + '/swagger-ui.html', '_blank')"
+          title="Endpoint: /swagger-ui.html"
+        >
+          🔗 API Docs (Swagger)
+        </button>
+        <button class="danger" onclick="clearExpired()" title="Endpoint: DELETE /api/items/expired">
+          🗑️ Clear Expired Items
+        </button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Expiry Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="itemsTable">
+            <tr>
+              <td colspan="6" class="loading">Loading inventory...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="modal" class="modal" onclick="closeModal('modal')">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <h2 id="modalTitle">Endpoint Result</h2>
+        <pre id="modalResult"></pre>
+        <button style="margin-top: 1.5rem; width: 100%; justify-content: center" onclick="closeModal('modal')">
+          Close
+        </button>
+      </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="formModal" class="modal" onclick="closeModal('formModal')">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <h2 id="formModalTitle">Add New Item</h2>
+        <form id="itemForm" onsubmit="handleFormSubmit(event)" style="margin-top: 1.5rem">
+          <input type="hidden" id="itemId" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" id="itemNameForm" required />
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <input type="text" id="itemCategory" required />
+            </div>
+            <div class="form-group">
+              <label>Type</label>
+              <input type="text" id="itemType" placeholder="Food, Drink, etc." />
+            </div>
+            <div class="form-group">
+              <label>Barcode</label>
+              <input type="text" id="itemBarcode" required />
+            </div>
+            <div class="form-group">
+              <label>Price</label>
+              <input type="number" step="0.01" id="itemPrice" required />
+            </div>
+            <div class="form-group">
+              <label>Quantity</label>
+              <input type="number" id="itemQuantity" required />
+            </div>
+            <div class="form-group">
+              <label>Min Stock</label>
+              <input type="number" id="itemMinStock" required />
+            </div>
+            <div class="form-group">
+              <label>Supplier</label>
+              <input type="text" id="itemSupplier" />
+            </div>
+            <div class="form-group">
+              <label>Manufacture Date</label>
+              <input type="date" id="itemManDate" />
+            </div>
+            <div class="form-group">
+              <label>Expiry Date</label>
+              <input type="date" id="itemExpDate" required />
+            </div>
+          </div>
+          <div style="display: flex; gap: 1rem; margin-top: 2rem">
+            <button
+              type="button"
+              class="outline"
+              style="flex: 1; justify-content: center"
+              onclick="closeModal('formModal')"
+            >
+              Cancel
+            </button>
+            <button type="submit" style="flex: 2; justify-content: center">Save Item</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bulk Modal -->
+    <div id="bulkModal" class="modal" onclick="closeModal('bulkModal')">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <h2>Bulk Import Items</h2>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem">
+          Paste your items JSON array below:
+        </p>
+        <textarea
+          id="bulkJson"
+          style="width: 100%; height: 300px; font-family: monospace"
+          placeholder='[{"name": "Item 1", ...}]'
+        ></textarea>
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem">
+          <button class="outline" style="flex: 1; justify-content: center" onclick="closeModal('bulkModal')">
+            Cancel
+          </button>
+          <button style="flex: 2; justify-content: center" onclick="handleBulkImport()">Import All</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./config.js"></script>
+    <script>
+      const API_BASE = window.API_BASE || "http://localhost:8080";
+
+      function apiUrl(path) {
+        return `${API_BASE}${path}`;
+      }
+
+      async function resetData() {
+        if (confirm("Reset database to initial state?")) {
+          try {
+            await fetch(apiUrl("/api/items/reset"), { method: "POST" });
+            fetchAllData();
+          } catch (e) {
+            alert("Error resetting data");
+          }
+        }
+      }
+
+      async function fetchAllData() {
+        fetchStats();
+        fetchItems();
+      }
+
+      async function fetchStats() {
+        try {
+          const res = await fetch(apiUrl("/api/items/analytics"));
+          const data = await res.json();
+          document.getElementById("totalProducts").textContent = data.totalProducts;
+          document.getElementById("expiredProducts").textContent = data.expiredProducts;
+          document.getElementById("expiringSoonProducts").textContent = data.expiringSoonProducts;
+          document.getElementById("lowStockProducts").textContent = data.lowStockProducts;
+        } catch (e) {
+          console.error("Failed to fetch stats", e);
+        }
+      }
+
+      async function fetchItems() {
+        try {
+          const name = document.getElementById("searchName").value;
+          const status = document.getElementById("searchStatus").value;
+
+          let url = apiUrl("/api/items?");
+          if (name) url += `name=${encodeURIComponent(name)}&`;
+          if (status) url += `status=${status}&`;
+
+          const res = await fetch(url);
+          const items = await res.json();
+          const tbody = document.getElementById("itemsTable");
+          tbody.innerHTML = "";
+
+          if (items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">No items found matching filters.</td></tr>';
+            return;
+          }
+
+          items.forEach((item) => {
+            const row = document.createElement("tr");
+            const statusClass =
+              item.status === "EXPIRED"
+                ? "badge-danger"
+                : item.status === "EXPIRING_SOON"
+                  ? "badge-warning"
+                  : "badge-valid";
+
+            row.innerHTML = `
+                        <td>
+                            <div style="font-weight: 600;">${item.name}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">${item.barcode}</div>
+                        </td>
+                        <td>${item.category}</td>
+                        <td style="font-weight: 600;">$${item.price.toFixed(2)}</td>
+                        <td>
+                            <span style="color: ${item.quantity < item.minStock ? "var(--warning)" : "inherit"}">
+                                ${item.quantity} / ${item.minStock}
+                            </span>
+                        </td>
+                        <td>${item.expiryDate}</td>
+                        <td><span class="badge ${statusClass}">${item.status}</span></td>
+                        <td>
+                            <div style="display: flex; gap: 0.25rem;">
+                                <button class="action-btn edit-btn" onclick="editItem(${item.id})" title="Endpoints: GET /api/items/${item.id} & PUT /api/items/${item.id}">✎</button>
+                                <button class="action-btn delete-btn" onclick="deleteItemById(${item.id})" title="Endpoint: DELETE /api/items/${item.id}">✖</button>
+                            </div>
+                        </td>
+                    `;
+            tbody.appendChild(row);
+          });
+        } catch (e) {
+          console.error("Failed to fetch items", e);
+        }
+      }
+
+      async function fetchEndpoint(url, title) {
+        try {
+          const res = await fetch(apiUrl(url));
+          const data = await res.json();
+          document.getElementById("modalTitle").textContent = title;
+          document.getElementById("modalResult").textContent = JSON.stringify(data, null, 2);
+          document.getElementById("modal").style.display = "flex";
+        } catch (e) {
+          alert("Error fetching endpoint: " + url);
+        }
+      }
+
+      function openAddModal() {
+        document.getElementById("formModalTitle").textContent = "Add New Item";
+        document.getElementById("itemForm").reset();
+        document.getElementById("itemId").value = "";
+        document.getElementById("formModal").style.display = "flex";
+      }
+
+      async function editItem(id) {
+        try {
+          const res = await fetch(apiUrl(`/api/items/${id}`));
+          const item = await res.json();
+
+          document.getElementById("formModalTitle").textContent = "Edit Item";
+          document.getElementById("itemId").value = item.id;
+          document.getElementById("itemNameForm").value = item.name;
+          document.getElementById("itemCategory").value = item.category;
+          document.getElementById("itemType").value = item.type || "";
+          document.getElementById("itemBarcode").value = item.barcode;
+          document.getElementById("itemPrice").value = item.price;
+          document.getElementById("itemQuantity").value = item.quantity;
+          document.getElementById("itemMinStock").value = item.minStock;
+          document.getElementById("itemSupplier").value = item.supplier || "";
+          document.getElementById("itemManDate").value = item.manufactureDate || "";
+          document.getElementById("itemExpDate").value = item.expiryDate;
+
+          document.getElementById("formModal").style.display = "flex";
+        } catch (e) {
+          alert("Error loading item details");
+        }
+      }
+
+      async function handleFormSubmit(event) {
+        event.preventDefault();
+        const id = document.getElementById("itemId").value;
+        const item = {
+          name: document.getElementById("itemNameForm").value,
+          category: document.getElementById("itemCategory").value,
+          type: document.getElementById("itemType").value,
+          barcode: document.getElementById("itemBarcode").value,
+          price: parseFloat(document.getElementById("itemPrice").value),
+          quantity: parseInt(document.getElementById("itemQuantity").value),
+          minStock: parseInt(document.getElementById("itemMinStock").value),
+          supplier: document.getElementById("itemSupplier").value,
+          manufactureDate: document.getElementById("itemManDate").value,
+          expiryDate: document.getElementById("itemExpDate").value,
+        };
+
+        try {
+          const url = id ? apiUrl(`/api/items/${id}`) : apiUrl("/api/items");
+          const method = id ? "PUT" : "POST";
+
+          const res = await fetch(url, {
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(item),
+          });
+
+          if (res.ok) {
+            closeModal("formModal");
+            fetchAllData();
+          } else {
+            alert("Error saving item");
+          }
+        } catch (e) {
+          alert("Error connecting to server");
+        }
+      }
+
+      async function deleteItemById(id) {
+        if (confirm("Permanently delete this item?")) {
+          try {
+            await fetch(apiUrl(`/api/items/${id}`), { method: "DELETE" });
+            fetchAllData();
+          } catch (e) {
+            alert("Error deleting item");
+          }
+        }
+      }
+
+      function openBulkModal() {
+        document.getElementById("bulkJson").value = "";
+        document.getElementById("bulkModal").style.display = "flex";
+      }
+
+      async function handleBulkImport() {
+        const jsonText = document.getElementById("bulkJson").value;
+        try {
+          const items = JSON.parse(jsonText);
+          const res = await fetch(apiUrl("/api/items/bulk"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(items),
+          });
+
+          if (res.ok) {
+            closeModal("bulkModal");
+            fetchAllData();
+          } else {
+            alert("Error importing items. Check JSON format.");
+          }
+        } catch (e) {
+          alert("Invalid JSON format.");
+        }
+      }
+
+      async function clearExpired() {
+        if (confirm("Are you sure you want to delete all expired items?")) {
+          try {
+            await fetch(apiUrl("/api/items/expired"), { method: "DELETE" });
+            fetchAllData();
+          } catch (e) {
+            alert("Failed to clear items");
+          }
+        }
+      }
+
+      function closeModal(id) {
+        document.getElementById(id).style.display = "none";
+      }
+
+      // Initial load
+      fetchAllData();
+    </script>
+  </body>
+</html>
