@@ -2690,13 +2690,17 @@
           demoState.questions += 1;
           let message;
           if (/(why|meaning|pending|completed|x)/.test(question)) {
-            message = "The key distinction is semantic: `[x]` marks a completed task, so a pending task is one that does **not** start with that marker. What boolean condition expresses that?";
+            message =
+              "The key distinction is semantic: `[x]` marks a completed task, so a pending task is one that does **not** start with that marker. What boolean condition expresses that?";
           } else if (/(test|expected|assert|result|fail)/.test(question)) {
-            message = "Start with the test expectation: the sample has two unfinished tasks, so `count_pending()` should return `2`. Trace which items the current filter actually includes.";
+            message =
+              "Start with the test expectation: the sample has two unfinished tasks, so `count_pending()` should return `2`. Trace which items the current filter actually includes.";
           } else if (/(list|comprehension|filter|condition|startswith|boolean)/.test(question)) {
-            message = "Read the comprehension from left to right: it keeps an item when the condition is true. `startswith(\"[x]\")` identifies completed items; pending-count logic needs the opposite condition.";
+            message =
+              'Read the comprehension from left to right: it keeps an item when the condition is true. `startswith("[x]")` identifies completed items; pending-count logic needs the opposite condition.';
           } else if (/(fix|change|solution|code|edit)/.test(question)) {
-            message = "You are close. Change the predicate so completed tasks are excluded, then run the tests and look for `3 passed`. I will not edit the file for you in this teaching mode.";
+            message =
+              "You are close. Change the predicate so completed tasks are excluded, then run the tests and look for `3 passed`. I will not edit the file for you in this teaching mode.";
           } else {
             const prompts = [
               "What does the current condition select: completed tasks or unfinished tasks?",
