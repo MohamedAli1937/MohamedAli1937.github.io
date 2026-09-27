@@ -1935,12 +1935,12 @@
               </button>
 
               <div class="path-reveal hidden" id="path-reveal">
-                <label class="field-caption" for="project-path">🗂 Where does your project live?</label>
+                <label class="field-caption" for="project-url">🔗 GitHub Repository URL</label>
                 <input
                   class="tablet-input"
                   type="text"
-                  id="project-path"
-                  placeholder="Enter the project path"
+                  id="project-url"
+                  placeholder="https://github.com/username/repository"
                   required
                 />
                 <button class="btn-primary" onclick="confirmPath()" style="align-self: flex-start">
@@ -2212,7 +2212,7 @@
       const configuredApi = new URLSearchParams(window.location.search).get("api");
       const API_BASE =
         configuredApi ||
-        (window.location.protocol.startsWith("http") && window.location.port === "8000" ? "" : "http://127.0.0.1:8000");
+        (window.location.port === "8000" ? window.location.origin : "https://YOUR-HUGGINGFACE-SPACE.hf.space");
       const DEMO_MODE = window.location.hostname.endsWith("github.io") && !configuredApi;
 
       const AGENT_IMAGES = {
@@ -2249,7 +2249,7 @@
 
       let isSessionActive = false;
       let isLoading = false;
-      let currentProjectPath = "";
+      let currentProjectUrl = "";
       let lastPlanConcept = "";
       let lastResourceCount = 0;
 
@@ -2597,7 +2597,7 @@
               {
                 agent: "System",
                 message:
-                  "This GitHub Pages deployment is a static demo. Due to the hackathon's limited development time, it cannot connect to Groq or inspect your local project. No AI diagnosis was generated. Run the FastAPI server locally at [http://127.0.0.1:8000](http://127.0.0.1:8000) for the live Groq-powered experience.",
+                  "This GitHub Pages deployment is a static demo. Due to the hackathon's limited development time, it cannot connect to Groq or inspect your repository. No AI diagnosis was generated. Configure the Hugging Face API URL to use the live backend.",
                 message_type: "error",
               },
             ],
@@ -2743,7 +2743,7 @@
 
       // ── Reset / New Quest ────────────────────────────────
       function startNewQuest() {
-        document.getElementById("project-path").value = "";
+        document.getElementById("project-url").value = "";
         document.getElementById("bug-description").value = "";
         document.getElementById("bug-char-count").textContent = "0";
         document.getElementById("path-reveal").classList.add("hidden");
@@ -2769,7 +2769,7 @@
         document.querySelectorAll(".quick-btn").forEach((btn) => (btn.disabled = true));
 
         isSessionActive = false;
-        currentProjectPath = "";
+        currentProjectUrl = "";
         visitedStages = new Set();
         unlockedStages = new Set(["explorer"]);
         currentStage = "explorer";
@@ -2783,15 +2783,15 @@
       // ── Stage 1 → 2 handoff ──────────────────────────────
       function revealPathInput() {
         document.getElementById("path-reveal").classList.remove("hidden");
-        document.getElementById("project-path").focus();
+        document.getElementById("project-url").focus();
       }
       function confirmPath() {
-        const path = document.getElementById("project-path").value.trim();
-        if (!path) {
-          document.getElementById("project-path").focus();
+        const url = document.getElementById("project-url").value.trim();
+        if (!/^https:\/\/github\.com\/[^/]+\/[^/]+\/?$/.test(url)) {
+          document.getElementById("project-url").focus();
           return;
         }
-        currentProjectPath = path;
+        currentProjectUrl = url;
         goToStage("decoder");
       }
 
@@ -2801,7 +2801,7 @@
         const errBanner = document.getElementById("decoder-error");
         errBanner.classList.remove("show");
 
-        if (!currentProjectPath || !bugDesc) {
+        if (!currentProjectUrl || !bugDesc) {
           errBanner.textContent = "Please describe the bug before continuing.";
           errBanner.classList.add("show");
           return;
@@ -2817,12 +2817,14 @@
           setLoading(true, "Jungle crew is assembling...");
 
           const data = await apiCall("/api/start", "POST", {
-            project_path: currentProjectPath,
-            bug_description: bugDesc,
+            project_url: currentProjectUrl,
+            bug_report: bugDesc,
           });
 
           if (!data.success) {
             for (const msg of data.messages) await addMessage(msg, 100);
+            startBtn.disabled = false;
+            startBtn.textContent = "Decode the Bug →";
             setStatus("Error", false);
             setLoading(false);
             return;
@@ -2863,7 +2865,7 @@
           await addMessage({
             agent: "System",
             animal: "🌴",
-            message: `Connection failed: ${err.message}. Make sure the backend server is running on port 8000.\n\nTip: You can open the application directly at [http://127.0.0.1:8000](http://127.0.0.1:8000).`,
+            message: `Connection failed: ${err.message}. Check that the configured Hugging Face backend is running.`,
             message_type: "error",
           });
           setStatus("Error", false);
