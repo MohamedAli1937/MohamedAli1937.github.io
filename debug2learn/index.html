@@ -378,18 +378,6 @@
         background: var(--jungle-accent);
         box-shadow: 0 0 6px var(--jungle-accent);
         animation: pulseDot 2s ease-in-out infinite;
-
-      .hosting-notice {
-        margin: 12px auto 0;
-        max-width: 920px;
-        padding: 10px 16px;
-        border: 1px solid rgba(244, 197, 66, 0.35);
-        border-radius: var(--radius-sm);
-        background: rgba(244, 197, 66, 0.08);
-        color: var(--text-secondary);
-        font-size: 12px;
-        text-align: center;
-      }
       }
       @keyframes pulseDot {
         0%,
@@ -1916,11 +1904,6 @@
         </div>
       </header>
 
-      <div class="hosting-notice" id="hosting-notice" role="status" hidden>
-        Hosted web version: Gemini API keys are intentionally not used here yet. No AI answers will be invented;
-        run the local backend for Gemini-powered debugging.
-      </div>
-
       <!-- ═══ Stage viewport ═══ -->
       <main class="stage-viewport" id="stage-viewport">
         <!-- STAGE 1 — EXPLORER (Lion) -->
@@ -2229,7 +2212,6 @@
       const API_BASE =
         window.location.protocol.startsWith("http") && window.location.port === "8000" ? "" : "http://127.0.0.1:8000";
       const DEMO_MODE = window.location.hostname.endsWith("github.io");
-      document.getElementById("hosting-notice").hidden = !DEMO_MODE;
 
       const AGENT_IMAGES = {
         Decoder: "assets/panda.svg",
