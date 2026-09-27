@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Debug2Learn — AI Debugging Adventure</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
     <meta
       name="description"
       content="Don't let AI fix your bugs. Let AI teach you to fix them. A jungle debugging adventure guided by six AI animal mentors."
@@ -189,8 +190,9 @@
         gap: 12px;
       }
       .brand-icon {
-        font-size: 26px;
-        filter: drop-shadow(0 0 10px rgba(61, 220, 132, 0.5));
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
       }
       .brand-name {
         font-family: var(--font-display);
@@ -1841,7 +1843,7 @@
       <!-- ═══ Top bar ═══ -->
       <header class="top-bar">
         <div class="brand">
-          <span class="brand-icon">🌴</span>
+          <img src="assets/favicon.svg" alt="Debug2Learn" class="brand-icon" />
           <div>
             <div class="brand-name">Debug2Learn</div>
             <div class="brand-tagline">Don't let AI fix your bugs. Let AI teach you.</div>
