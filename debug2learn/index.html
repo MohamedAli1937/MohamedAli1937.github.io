@@ -2186,10 +2186,14 @@
     <aside class="questlog-drawer" id="questlog-drawer" aria-label="Quest log">
       <h3>
         Quest Log
-        <button class="questlog-close" type="button" onclick="toggleQuestLog(false)" aria-label="Close quest log">×</button>
+        <button class="questlog-close" type="button" onclick="toggleQuestLog(false)" aria-label="Close quest log">
+          ×
+        </button>
       </h3>
       <div class="quest-steps" id="quest-steps">
-        <div class="quest-step" style="color:var(--text-dim); font-style:italic; font-size:12px;">Start a quest to see steps…</div>
+        <div class="quest-step" style="color: var(--text-dim); font-style: italic; font-size: 12px">
+          Start a quest to see steps…
+        </div>
       </div>
     </aside>
     <div class="drawer-backdrop" id="drawer-backdrop" onclick="toggleQuestLog(false)"></div>
@@ -2552,7 +2556,7 @@
       }
 
       // ── API helper ──────────────────
-      const demoState = { active: false, hints: 0 };
+      const demoState = { active: false, hints: 0, questions: 0 };
       const demoPlan = {
         hypothesis: "count_pending() counts completed tasks instead of pending tasks.",
         failure_location: "test_todo.py::test_count_pending",
@@ -2566,25 +2570,65 @@
         current_step: 0,
       };
       const demoResources = [
-        { title: "Python Tutorial: List Comprehensions", relevance: "Build concise filtered lists.", url: "https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions" },
-        { title: "Python Standard Library: Boolean Operations", relevance: "Use not, and, and or to express conditions.", url: "https://docs.python.org/3/library/stdtypes.html#boolean-operations-and-or-not" },
-        { title: "Python String Methods: str.startswith()", relevance: "Check whether a task has a completion marker.", url: "https://docs.python.org/3/library/stdtypes.html#str.startswith" },
+        {
+          title: "Python Tutorial: List Comprehensions",
+          relevance: "Build concise filtered lists.",
+          url: "https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions",
+        },
+        {
+          title: "Python Standard Library: Boolean Operations",
+          relevance: "Use not, and, and or to express conditions.",
+          url: "https://docs.python.org/3/library/stdtypes.html#boolean-operations-and-or-not",
+        },
+        {
+          title: "Python String Methods: str.startswith()",
+          relevance: "Check whether a task has a completion marker.",
+          url: "https://docs.python.org/3/library/stdtypes.html#str.startswith",
+        },
       ];
 
       function demoApiCall(endpoint, body) {
         if (endpoint === "/api/start") {
           demoState.active = true;
           demoState.hints = 0;
+          demoState.questions = 0;
           return {
             success: true,
             messages: [
-              { agent: "Decoder", message: "**Detected issue:** count_pending returns the wrong number of pending tasks.", message_type: "success" },
+              {
+                agent: "Decoder",
+                message: "**Detected issue:** count_pending returns the wrong number of pending tasks.",
+                message_type: "success",
+              },
               { agent: "Explorer", message: "Mapped **2 files** (1 source, 1 tests).", message_type: "success" },
-              { agent: "Solver", message: "Synthesizing hypothesis, isolating root cause & designing pedagogical plan...", message_type: "action" },
-              { agent: "Solver", message: "**Hypothesis:** In `todo.py`, the filter selects tasks starting with `[x]`, which are completed.\n**Root Cause:** `todo.py -> count_pending`\n**Failure Detected By:** `test_todo.py::test_count_pending`\n**Concept:** Python List Comprehensions & Conditional Filtering\n**Confidence:** 96%\n**Quest Steps:** 2", message_type: "plan" },
-              { agent: "Librarian", message: "- Python Tutorial: List Comprehensions\n- Python Standard Library: Boolean Operations\n- Python String Methods: str.startswith()", message_type: "success" },
-              { agent: "Tracker", message: "Baseline established for **2 files** (todo.py, test_todo.py). Tracking active modifications.", message_type: "success" },
-              { agent: "Master", message: "Let's understand the problem together. Which tasks should count as pending: the ones marked `[x]`, or the ones without that marker?", message_type: "master" },
+              {
+                agent: "Solver",
+                message: "Synthesizing hypothesis, isolating root cause & designing pedagogical plan...",
+                message_type: "action",
+              },
+              {
+                agent: "Solver",
+                message:
+                  "**Hypothesis:** In `todo.py`, the filter selects tasks starting with `[x]`, which are completed.\n**Root Cause:** `todo.py -> count_pending`\n**Failure Detected By:** `test_todo.py::test_count_pending`\n**Concept:** Python List Comprehensions & Conditional Filtering\n**Confidence:** 96%\n**Quest Steps:** 2",
+                message_type: "plan",
+              },
+              {
+                agent: "Librarian",
+                message:
+                  "- Python Tutorial: List Comprehensions\n- Python Standard Library: Boolean Operations\n- Python String Methods: str.startswith()",
+                message_type: "success",
+              },
+              {
+                agent: "Tracker",
+                message: "Baseline established for **2 files** (todo.py, test_todo.py). Tracking active modifications.",
+                message_type: "success",
+              },
+              {
+                agent: "Master",
+                message:
+                  "Let's understand the problem together. Which tasks should count as pending: the ones marked `[x]`, or the ones without that marker?",
+                message_type: "master",
+              },
             ],
             quest_steps: demoPlan.steps,
           };
@@ -2596,17 +2640,73 @@
           const messages = [
             "Look closely at the condition inside the list comprehension. What does `[x]` identify?",
             "A pending task is one that does **not** start with `[x]`. How would you express that exclusion?",
-            "Try changing the condition to `not task.startswith(\"[x]\")`, then run the tests.",
+            'Try changing the condition to `not task.startswith("[x]")`, then run the tests.',
           ];
-          return { agent: "Master", message: messages[Math.min(demoState.hints - 1, 2)], message_type: "hint", hint_level: `Level ${Math.min(demoState.hints, 3)}: ${demoState.hints === 1 ? "Nudge" : demoState.hints === 2 ? "Clue" : "Direct Clue"}` };
+          return {
+            agent: "Master",
+            message: messages[Math.min(demoState.hints - 1, 2)],
+            message_type: "hint",
+            hint_level: `Level ${Math.min(demoState.hints, 3)}: ${demoState.hints === 1 ? "Nudge" : demoState.hints === 2 ? "Clue" : "Direct Clue"}`,
+          };
         }
-        if (endpoint === "/api/check") return { messages: [{ agent: "Tracker", message: "Demo mode: imagine the tracker comparing your saved files. Edit `todo.py`, then validate the result.", message_type: "warning" }], ready_for_test: true };
+        if (endpoint === "/api/check")
+          return {
+            messages: [
+              {
+                agent: "Tracker",
+                message:
+                  "Demo mode: imagine the tracker comparing your saved files. Edit `todo.py`, then validate the result.",
+                message_type: "warning",
+              },
+            ],
+            ready_for_test: true,
+          };
         if (endpoint === "/api/test") {
-          const output = (body && body.test_output || "").toLowerCase();
+          const output = ((body && body.test_output) || "").toLowerCase();
           const passed = output.includes("passed") && !output.includes("failed");
-          return { passed, messages: [{ agent: "Master", message: passed ? "Excellent. The tests pass, and your reasoning led you to the fix." : "The demo expects test output containing `passed`. Keep inspecting the filtering condition.", message_type: passed ? "quest_complete" : "hint" }], test_summary: { passed: passed ? 3 : 0, total: 3, failed: passed ? 0 : 1, skipped: 0, duration: "0.02s", raw_output: body && body.test_output || "" } };
+          return {
+            passed,
+            messages: [
+              {
+                agent: "Master",
+                message: passed
+                  ? "Excellent. The tests pass, and your reasoning led you to the fix."
+                  : "The demo expects test output containing `passed`. Keep inspecting the filtering condition.",
+                message_type: passed ? "quest_complete" : "hint",
+              },
+            ],
+            test_summary: {
+              passed: passed ? 3 : 0,
+              total: 3,
+              failed: passed ? 0 : 1,
+              skipped: 0,
+              duration: "0.02s",
+              raw_output: (body && body.test_output) || "",
+            },
+          };
         }
-        if (endpoint === "/api/ask") return { agent: "Master", message: "In this published demo, use the hints to trace the condition from the test expectation back to `count_pending()`.", message_type: "master" };
+        if (endpoint === "/api/ask") {
+          const question = String((body && body.question) || "").toLowerCase();
+          demoState.questions += 1;
+          let message;
+          if (/(why|meaning|pending|completed|x)/.test(question)) {
+            message = "The key distinction is semantic: `[x]` marks a completed task, so a pending task is one that does **not** start with that marker. What boolean condition expresses that?";
+          } else if (/(test|expected|assert|result|fail)/.test(question)) {
+            message = "Start with the test expectation: the sample has two unfinished tasks, so `count_pending()` should return `2`. Trace which items the current filter actually includes.";
+          } else if (/(list|comprehension|filter|condition|startswith|boolean)/.test(question)) {
+            message = "Read the comprehension from left to right: it keeps an item when the condition is true. `startswith(\"[x]\")` identifies completed items; pending-count logic needs the opposite condition.";
+          } else if (/(fix|change|solution|code|edit)/.test(question)) {
+            message = "You are close. Change the predicate so completed tasks are excluded, then run the tests and look for `3 passed`. I will not edit the file for you in this teaching mode.";
+          } else {
+            const prompts = [
+              "What does the current condition select: completed tasks or unfinished tasks?",
+              "Which line in `todo.py` decides whether a task is included in the count?",
+              "Can you compare the words `pending` and `completed` with the boolean condition?",
+            ];
+            message = prompts[(demoState.questions - 1) % prompts.length];
+          }
+          return { agent: "Master", message, message_type: "master" };
+        }
         return {};
       }
 
