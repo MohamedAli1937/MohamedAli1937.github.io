@@ -2212,8 +2212,8 @@
       const configuredApi = new URLSearchParams(window.location.search).get("api");
       const API_BASE =
         configuredApi ||
-        (window.location.port === "8000" ? window.location.origin : "https://YOUR-HUGGINGFACE-SPACE.hf.space");
-      const DEMO_MODE = window.location.hostname.endsWith("github.io") && !configuredApi;
+        (window.location.port === "8000" ? window.location.origin : "https://debug2learn.onrender.com");
+      const DEMO_MODE = false;
 
       const AGENT_IMAGES = {
         Decoder: "assets/panda.svg",
