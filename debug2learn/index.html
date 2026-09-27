@@ -2589,6 +2589,19 @@
 
       function demoApiCall(endpoint, body) {
         if (endpoint === "/api/start") {
+          return {
+            success: false,
+            messages: [
+              {
+                agent: "System",
+                message:
+                  "This GitHub Pages deployment is a static demo and cannot connect to Gemini or inspect your local project. No AI diagnosis was generated. Run the FastAPI server locally at [http://127.0.0.1:8000](http://127.0.0.1:8000) for the live Gemini-powered experience.",
+                message_type: "error",
+              },
+            ],
+            quest_steps: [],
+          };
+          /* Sample data below is retained for local development previews. */
           demoState.active = true;
           demoState.hints = 0;
           demoState.questions = 0;
