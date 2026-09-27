@@ -2209,9 +2209,10 @@
    DEBUG2LEARN — Frontend Logic
    ═══════════════════════════════════════════════════════ */
 
-      const API_BASE =
-        window.location.protocol.startsWith("http") && window.location.port === "8000" ? "" : "http://127.0.0.1:8000";
-      const DEMO_MODE = window.location.hostname.endsWith("github.io");
+      const configuredApi = new URLSearchParams(window.location.search).get("api");
+      const API_BASE = configuredApi ||
+        (window.location.protocol.startsWith("http") && window.location.port === "8000" ? "" : "http://127.0.0.1:8000");
+      const DEMO_MODE = window.location.hostname.endsWith("github.io") && !configuredApi;
 
       const AGENT_IMAGES = {
         Decoder: "assets/panda.svg",
